@@ -1,0 +1,25 @@
+# Build
+target/
+dependency-reduced-pom.xml
+
+# Personal files (not for GitHub)
+docs/resume*.tex
+
+# Runtime outputs (baseline / bills / judge reports / rta self-records)
+data/
+
+# Local toolchain (JDK 21 + Maven, self-contained)
+tools/
+
+# IDE / agent
+.idea/
+*.iml
+.vscode/
+.trae/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,33 @@
+server:
+  port: 9100
+  tomcat:
+    # 压测口径：万级 QPS 需放宽连接上限（默认 8192 会截断）
+    max-connections: 100000
+    accept-count: 1000
+    max-keep-alive-requests: -1
+
+spring:
+  application:
+    name: adkernel-rta
+  threads:
+    virtual:
+      # Java 21 虚拟线程承载请求（每请求一个 VT，同步写法 + 高吞吐）
+      enabled: true
+
+management:
+  endpoint:
+    shutdown:
+      # 优雅停机（验收脚本用它触发 @PreDestroy 落盘 flush）
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,shutdown
+
+rta:
+  secret-key: adkernel-m0-secret
+  sign-ttl-ms: 60000
+  exp-id: exp-m0-echo
+  fault-blacklist-bypass: false
+  decision-sample-rate: 0.01
+  data-dir: ./data/rta

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · M1 深入手册</title>
+<style>
+  :root {
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+    --border: #e5e7eb; --bg: #ffffff; --bg-2: #f9fafb;
+    --green: #059669; --amber: #d97706; --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.75; font-size: 15px; }
+  .layout { display: flex; min-height: 100vh; }
+  nav.sidebar { width: 250px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 28px 12px 40px; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--bg-2); }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a { display: block; padding: 8px 14px; color: var(--text-2); text-decoration: none; border-radius: 6px; font-size: 13.5px; margin-bottom: 2px; }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  pre .cmt { color: #94a3b8; }
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-2); font-weight: 600; color: var(--text); }
+  td { color: var(--text-2); }
+  tr:nth-child(even) td { background: #fcfcfd; }
+  .kp { display: flex; gap: 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13.5px; background: var(--bg-2); }
+  .kp .tag { flex-shrink: 0; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 2px 8px; height: fit-content; }
+  .kp .body { color: var(--text-2); }
+  .kp .body b { color: var(--text); }
+  .expect { border: 1px solid #a7f3d0; background: #ecfdf5; border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 13px; }
+  .expect .t { font-weight: 700; color: var(--green); font-size: 12px; margin-bottom: 6px; }
+  .dod { list-style: none; margin: 12px 0; }
+  .dod li { display: flex; gap: 10px; align-items: flex-start; padding: 7px 8px; border-radius: 6px; }
+  .dod li:hover { background: var(--bg-2); }
+  .dod input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; margin-top: 5px; cursor: pointer; flex-shrink: 0; }
+  .dod label { cursor: pointer; color: var(--text-2); }
+  .dod li.done label { color: var(--text-3); text-decoration: line-through; }
+  .radar-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .radar-item .date { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--accent); font-weight: 700; margin-right: 8px; }
+  .radar-item .impact { display: block; margin-top: 6px; font-size: 12.5px; color: var(--green); }
+  a.ext { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+  a.ext:hover { opacity: .8; }
+  @media (max-width: 860px) { nav.sidebar { display: none; } .content { padding: 28px 20px 80px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · M1 深入手册<small>特征服务与多级缓存</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#overview">M1 的定位与伏笔</a>
+  <div class="group-label">任务深入</div>
+  <a href="#t1">任务1 · 画像源与特征模型</a>
+  <a href="#t2">任务2 · 两级缓存主体</a>
+  <a href="#t3">任务3 · 防穿透双层</a>
+  <a href="#t4">任务4 · 超时降级与 stale 兜底</a>
+  <div class="group-label">附录</div>
+  <a href="#card-disaster">速览卡 · 缓存三灾</a>
+  <a href="#card-caffeine">速览卡 · Caffeine 参数</a>
+  <a href="#card-latency">速览卡 · 三级延迟账本</a>
+  <a href="#radar">动态雷达 · 2026</a>
+  <a href="#dod">M1 验收清单（DoD）</a>
+  <a href="#refs">参考来源</a>
+  <div class="group-label">手册导航</div>
+  <a href="AdKernel项目开发Spec.html">Spec v2 · 总纲</a>
+  <a href="AdKernel-M0深入手册.html">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html" class="active">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<div>
+  <h1>AdKernel · M1 深入手册</h1>
+  <div class="subtitle">特征是决策的原料，缓存是低延迟的命。M1 给 M0 的 echo 骨架装上真实特征引擎：画像源（模拟广告主一方数据）→ L1 Caffeine（纳秒级）→ L2 Redis（毫秒级）→ 源（5ms 注入延迟）三级读路径，加防穿透双层与超时降级链。M1 结束时：特征查询 P99 从 ~12ms 降至 ~2ms，L1 命中率 ≥80%，Redis 注入延迟下决策不超时。性能叙事数字「L1 命中率 85%、12ms→2ms」在本册变成实测——按 Spec v2 定版原则它们不上简历，是决策链路 bullet 的面试追问弹药。</div>
+</div>
+
+<!-- ============ 总纲 ============ -->
+<section id="overview">
+  <h2><span class="num">00</span>M1 的定位与伏笔</h2>
+
+  <h3>为什么特征服务是 M1 而不是决策逻辑<span class="q">问题驱动</span></h3>
+  <p>M0 的 echo 恒参竞，延迟基线是"裸奔"数字。真实决策链中<b>特征查询是延迟预算最大的可变项</b>（15ms 预算）：L1 命中则微秒级返回，未命中穿透到源则 5ms 起步，Redis 抖动则必须降级。先把这 15ms 的确定性做出来，M2 的策略求值才有稳定的舞台——<b>地基不稳，上面的策略再聪明也会被延迟抖动拖垮</b>。另一个动机：特征模型的字段设计直接由 M2 策略需求反推（每个字段都能说出哪条策略消费它），所以 M1 顺带锁定了特征契约。</p>
+
+  <h3>本册埋的伏笔</h3>
+  <table>
+    <tr><th style="width:320px">M1 埋的线</th><th>在哪收</th></tr>
+    <tr><td>特征含 lastConvertTime 字段</td><td>M2 策略"已购未满 7d 不参竞"的数据源；M4 转化回流更新的目标字段</td></tr>
+    <tr><td>一致性预算：L1 15s / L2 5min / stale 12min（巨量实证）</td><td>M3 降级链路的分层语义；面试答"缓存不一致窗口怎么定"的依据</td></tr>
+    <tr><td>三级命中率 + 降级率指标（recordStats）</td><td>M5 可观测面板直接接入</td></tr>
+    <tr><td>L1 容量=10 万条（热头部 20%）的推导过程</td><td>M5 压测拐点分析的素材：容量调大/调小的命中率曲线</td></tr>
+    <tr><td>特征查询延迟分解数字</td><td>性能叙事「12ms→2ms」的两跳溯源终点（面试追问弹药）</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务1 ============ -->
+<section id="t1">
+  <h2><span class="num">01</span>任务1 · 画像源与特征模型</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>真实 RTA 查的是广告主一方数据（订单库/会员库/行为日志），不可能被 RTA 服务直连——中间必须有特征服务。我们的仿真要回答三个问题：源是什么、特征长什么样、源层"慢"在哪里（没有慢的源，缓存的一切优化都无法度量）。</p>
+
+  <h3>决策一：画像源的形态</h3>
+  <table>
+    <tr><th>方案</th><th>内容</th><th>判定</th></tr>
+    <tr><td>真 DB（H2/MySQL）</td><td>50 万用户建表导入</td><td>× 引入无关复杂度（连接池/JDBC 调优是另一个项目的事），且"慢"不可控</td></tr>
+    <tr><td><b>内存 Map + 延迟注入（采用）</b></td><td>50 万画像进 ConcurrentHashMap，查询时注入 5ms 处理延迟（模拟 DB 网络往返 + 查询）</td><td>✓ 零依赖、延迟可控可调（压测时可注入 50ms 模拟抖动）、50 万对象 ~100MB 内存可承受</td></tr>
+    <tr><td>L2 Redis 直当源</td><td>画像就放 Redis，不做源层</td><td>× 同介质两层没有意义；且丢失"回源成本"这个度量基准</td></tr>
+  </table>
+  <div class="kp"><span class="tag">5ms 不是拍脑袋</span><div class="body">回源成本必须是"可感知的痛"：L1 命中 1μs vs 源 5ms 是 <b>5000 倍差距</b>——这个数量级让命中率的意义不言自明，也和业界口径一致（MySQL Buffer Pool 未命中的一次磁盘查询 5-10ms）。注入值进 config，M4/压测时可调。</div></div>
+
+  <h3>决策二：特征字段由策略需求反推（不是先设计后使用）</h3>
+  <pre><code>// UserProfile —— 每个字段标注消费方, 无消费方的字段删除
+public record UserProfile(
+  String userId,
+  MemberLevel memberLevel,       // M2: 高价值分层出价(1.5x)的依据
+  boolean blacklisted,           // M2: 黑名单直接拒 + M0 断言的裁判依据
+  long lastConvertTime,          // M2: "已购未满7d不参竞" —— M4 转化回流更新的目标字段
+  int impressionCount7d,         // M2: 频控统计基础(用户×计划曝光数)
+  long firstSeenTime             // 新用户冷启动识别(注册<3d 走保守策略)
+) { }</code></pre>
+  <p>生成规则进脚本：50 万用户按分布生成——会员 10%（VIP 3%）、黑名单 1%、最近 7 天内转化 5%、其余长尾。分布可复现（seed 固定），10% 用户故意不生成（模拟"合法但无画像"的长尾，供空值缓存场景使用——与 M0 的 10% 伪造 ID 区分：伪造=布隆拦截层，合法无画像=空值缓存层）。</p>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>画像源服务独立端口可用，50 万用户可查，固定 seed 数据可复现</li>
+      <li>延迟注入生效：单次查询 P99 ≈ 5ms + 抖动（注入 50ms 时 P99 相应抬升）</li>
+      <li>特征字段与 M2 策略映射表成文：6 字段每个有消费方，无一"悬空字段"</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>压测时源层不慢了</td><td>延迟注入被 JIT 消除（Thread.sleep 不会，但若用忙等可能被优化）</td><td>用 ScheduledExecutor/CompletableFuture.delayedExecutor 延迟返回，勿用忙等循环</td></tr>
+    <tr><td>画像分布失真（VIP 占比过高）</td><td>生成脚本随机分布写错量级</td><td>分布断言进冒烟脚本：抽查 1 万用户各维度占比 ±1% 内</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务2 ============ -->
+<section id="t2">
+  <h2><span class="num">02</span>任务2 · L1 Caffeine + L2 Redis 两级缓存主体</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>三个层次的问题：① 为什么两级而不是一级——L2 Redis 每次命中也要一次网络 RTT（本地 ~1ms，跨机房更糟），3 万 QPS 下每秒 3 万次网络往返是纯浪费；L1 把热数据搬到进程内，微秒级零网络。② 为什么 L1 选 Caffeine——2026 年实证：大促场景 L1 命中率 92.5%，单热点 key 10 万 QPS 被本地层就地消化，对应 Redis 分片 CPU 从 98% 降到 18.5%。③ L1 容量给多少——不是拍脑袋，由 M0 的幂律分布反推。</p>
+
+  <h3>决策一：本地缓存选型（对齐 2026 实证对比）</h3>
+  <table>
+    <tr><th>维度</th><th>ConcurrentHashMap</th><th>Guava Cache</th><th>Ehcache 3</th><th>Caffeine（采用）</th></tr>
+    <tr><td>淘汰算法</td><td>无</td><td>近似 LRU</td><td>多种可选</td><td><b>W-TinyLFU</b>（频率素描 + 三段式）</td></tr>
+    <tr><td>并发读</td><td>高</td><td>分段锁竞争</td><td>偏重</td><td><b>无锁读 + CAS</b></td></tr>
+    <tr><td>异步刷新</td><td>不支持</td><td>不支持</td><td>有限</td><td><b>refreshAfterWrite 原生</b></td></tr>
+    <tr><td>回源合并</td><td>无</td><td>同 key 串行</td><td>有限</td><td><b>LoadingCache 天然 singleflight</b></td></tr>
+    <tr><td>统计</td><td>无</td><td>基础</td><td>丰富</td><td><b>recordStats 完整</b></td></tr>
+  </table>
+  <div class="kp"><span class="tag">W-TinyLFU 为什么对 AdKernel 特别重要</span><div class="body">通用缓存要防"扫描污染"（偶发批量查询把热点挤出去），而 AdKernel 的流量天然幂律（M0 埋的线）：热用户高频、长尾偶发。<b>LRU 会被长尾用户稀释命中率，W-TinyLFU 用 Count-Min Sketch 记录访问频率，热用户稳如泰山</b>——这正是"算法匹配流量分布"的选型叙事，比"Caffeine 性能好"高一个层次。</div></div>
+
+  <h3>决策二：参数由数据反推，不是抄配置</h3>
+  <pre><code>Caffeine.newBuilder()
+  .maximumSize(100_000)                    // = 50万 × 热头部20%(幂律), 内存≈20MB(10万条 × ~200B/条含条目开销)
+  .refreshAfterWrite(Duration.ofSeconds(15)) // 异步刷新: 刷新期间旧值可读 —— stale 兜底的一半
+  .expireAfterWrite(Duration.ofMinutes(10))  // 物理上限: 超过它连旧值都不可读
+  .recordStats()                             // 命中率/驱逐/加载时长全量统计 —— M5 面板数据源
+  .buildAsync(loader);                       // AsyncLoadingCache: 回源天然合并(见下)
+
+// L2 Redis: TTL 随机偏移防雪崩(实证口径: 基础 5min + random 0~1min, 偏移 10%~20%)
+// 两级 TTL 梯度: L1 15s刷新/10min过期, L2 5min —— 上层短、下层长, 上层兜下层的一致性
+// 精确口径写进 ADR: 特征更新后最坏不一致窗口 = L1(10min) , 但 refreshAfterWrite
+// 让 15s 后即开始拉新 —— 实际窗口以刷新节奏为准, 10min 只是"永不比这更陈旧"的上界</code></pre>
+
+  <h3>读路径与回源合并（Java 的天然优势）</h3>
+  <pre><code>CompletableFuture&lt;UserProfile&gt; get(String userId) {
+  // L1: Caffeine 的 AsyncCache —— 同 key 并发未命中时, loader 只执行一次,
+  //     其余请求共享同一 Future。Go 需要专门的 singleflight 库,
+  //     Java 的 LoadingCache.get(key, loader) 内在语义就是 singleflight。
+  return l1.get(userId, k -> {
+    // L1 miss → L2: pipeline 化的 GET, 超时 3ms(预算的一半)
+    UserProfile v = l2.get(k);
+    if (v != null) return CompletableFuture.completedFuture(v);
+    // L2 miss → 源(5ms 注入延迟) → 回填 L2(随机 TTL) → 返回
+    return sourceService.load(k).thenApply(profile -> {
+      l2.put(k, profile, ttlWithJitter());   // 写缓存失败不影响返回(实证纪律)
+      return profile;
+    });
+  });
+}</code></pre>
+  <div class="callout"><b>两条来自 2026 实证的生产纪律</b>：① <b>写缓存失败不能让请求失败</b>——回源成功但 L2 写入超时，直接返回数据，下一请求再试；② <b>L2 反序列化失败静默回源</b>——"缓存里的数据坏了"不该让请求失败，回源重拿一份即可。两条都是"为失败设计"的具体落点。</div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>L1 命中率 ≥ 80%（幂律流量下稳态；预言数字 85% 的出处）</li>
+      <li>延迟对比三组数字落盘：L1 命中 P99 &lt; 0.1ms；L2 命中 P99 ≈ 1-2ms；回源 P99 ≈ 6-8ms（5ms 注入 + 开销）——特征查询总 P99 ≈ 2ms（80%+ 在 L1 消化）</li>
+      <li>回源合并实证：冷启动 500 并发同 key 请求，源层实际收到 1 次查询（Caffeine 合并生效）</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>L1 命中率远低于预期</td><td>容量 &lt; 热集大小，或流量分布不是幂律（M0 模拟器配置漂移）</td><td>先查流量分布（Top20% 承载比），再调容量；容量翻倍做命中率曲线，找拐点</td></tr>
+    <tr><td>refreshAfterWrite 没生效感觉</td><td>没配 executor，刷新挤占请求线程</td><td>显式传自定义线程池；观察刷新任务队列积压指标</td></tr>
+    <tr><td>压测中 Full GC 频发</td><td>L1 容量过大 + 画像对象逃逸（被业务代码长期持有引用）</td><td>画像对象不可变（record 天然满足）；容量上限以堆内存 30% 为界反推</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务3 ============ -->
+<section id="t3">
+  <h2><span class="num">03</span>任务3 · 防穿透双层（布隆 + 空值缓存）</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>2026 实证把三类缓存故障的根因分得很清（速览卡）：穿透是"查不存在的东西"、击穿是"一个热点瞬间失效"、雪崩是"大面积同时失效"——<b>病根不同药方不同，一套方案包打天下必然顾此失彼</b>。AdKernel 的穿透场景由 M0 模拟器埋好：10% 伪造 ID（恶意扫描/爬虫口径）。双层防线：布隆过滤器拦"一定不存在"，空值缓存兜布隆误判和"合法但无画像"用户。</p>
+
+  <h3>决策：双层而不是单层</h3>
+  <table>
+    <tr><th>防线</th><th>拦什么</th><th>拦不住什么</th><th>参数</th></tr>
+    <tr><td>布隆过滤器（前置）</td><td>伪造 ID（说"不存在"≈100% 准确）</td><td>误判"存在"（假阳性）</td><td>50 万用户预热；fpp=0.01%（实证案例：大促布隆重构后误判率 0.0098%）</td></tr>
+    <tr><td>空值缓存（兜底）</td><td>布隆误判的伪造 ID + 合法无画像用户</td><td>—</td><td>NULL 值短 TTL 30-60s（实证口径），不占长期内存</td></tr>
+  </table>
+  <div class="kp"><span class="tag">布隆的纪律</span><div class="body">布隆说"不存在"一定不存在（前置拦截的性质来源），说"存在"可能不存在（假阳性）——所以它只能当<b>第一道</b>防线，永远不能当唯一防线。且布隆难删除、key 集合变化时要重建（实证案例用双缓冲位图无损热重构）——50 万用户固定集合是本场景适合布隆的前提，这个前提条件写进 ADR。</div></div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>穿透率 ≈ 0：稳态下源层收到的伪造 ID 查询 = 0（布隆拦截）+ 布隆误判被空值缓存吸收（唯一回源发生在首次误判，30-60s 窗口内一次）</li>
+      <li>两层防线各有独立指标：布隆拦截率 ≈ 100%、空值缓存命中率可观测</li>
+      <li>合法无画像用户返回默认画像（保守策略），决策不失败</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>布隆内存暴涨</td><td>fpp 设得过低（0.0001%）位图指数增长</td><td>fpp 0.01% 即够（每 key ~1.2KB 总量级）；需求变了再调，别预优化</td></tr>
+    <tr><td>NULL 缓存把 L2 占满</td><td>空值 TTL 太长 + 攻击者海量随机 ID</td><td>NULL 独立 TTL（30-60s）；观测 NULL 占比，异常升高 → 触发风控口径（M3 限流接手）</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务4 ============ -->
+<section id="t4">
+  <h2><span class="num">04</span>任务4 · 超时降级与 stale 兜底</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>低延迟系统的铁律（Spec 02 节）：宁可给保守决策，绝不超时。特征层的降级链：<b>L2 超时 → 读 L1 旧值（stale）→ 默认画像（保守策略）</b>。为什么允许读旧值：特征的不一致窗口本来就是预算过的（L1 15s 刷新节奏）——Redis 抖动 200ms 的场景里，读 15 秒前的画像和读最新画像，对"要不要参竞"这个决策的差异微乎其微；<b>但超时一次就是一次媒体侧的默认处理，超时率超 1% 就触碰红线</b>。用小的不一致换大可用，这笔账在 ADR 里算清楚。</p>
+
+  <h3>降级链实现与注入实验设计</h3>
+  <pre><code>// 特征查询的软超时包装: 预算 3ms(L2)/5ms(总)
+CompletableFuture&lt;UserProfile&gt; fet = getWithFallback(userId);
+//  L2 路径: 3ms 超时 → catch TimeoutException → 读 L1 旧值(stale, 标记 degraded=stale)
+//  L1 也没有(极端) → DEFAULT_PROFILE(保守: 不参竞/低出价, 标记 degraded=default)
+// 每次降级必须: metrics.increment(degraded_stale / degraded_default) —— M5 告警数据源
+
+// 注入实验(验收要件, 不是可选):
+//   模拟器稳态 3000 QPS + 源层注入 50ms 延迟(模拟 DB 抖动) 5 分钟
+//   → 预期: L1 命中的请求完全无感; 未命中请求走 stale; 决策超时率不升
+//   再注入: L2 Redis 整体 hang 30s
+//   → 预期: 全量走 stale/默认画像, 决策成功率不降, 超时率 0</code></pre>
+  <div class="callout green"><b>stale 兜底的业界实证</b>：巨量引擎特征服务公开口径——特征 RPC 超时后返回兜底缓存（12min 有效期），主链路永不因特征层失败而失败。我们的 L1 10min 物理过期 + 15s 刷新就是这个模式的自研版：<b>旧值永远可读（10min 内），刷新永不停摆（15s 节奏），超时永远有出路（降级链）</b>。</div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>两级注入实验通过：源 50ms 延迟 5 分钟 + Redis hang 30s，决策成功率 100%、超时率 0</li>
+      <li>降级率可观测且分层：degraded_stale / degraded_default 两个独立计数，注入期曲线可回放</li>
+      <li>降级语义正确性：stale 命中黑名单用户照样拒（旧值 ≠ 错值，15s 内的特征几乎总是对的）</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>注入实验中超时率上升</td><td>超时预算没有覆盖降级路径本身的耗时（读 L1 也要时间）</td><td>降级路径预算单独核算：L2 3ms + L1 旧值读取 &lt;0.1ms，总预算 4ms 内闭合</td></tr>
+    <tr><td>stale 读到"已过期物理 TTL"的值</td><td>expireAfterWrite(10min) 到期后 Caffeine 直接删——旧值没了</td><td>物理 TTL 是"旧值可读性"的上界，设计上它只兜 Redis 抖动（秒级），10min 绰绰有余；若要更长 stale 窗口需双 entry 方案（本场景不必，ADR 写明）</td></tr>
+    <tr><td>降级率统计不出来</td><td>降级路径忘了打点</td><td>M5 面板依赖这两计数——降级不观测 = 没降级</td></tr>
+  </table>
+</section>
+
+<!-- ============ 速览卡1 ============ -->
+<section id="card-disaster">
+  <h2><span class="num">05</span>速览卡 · 缓存三灾（面试高频，对照记忆）</h2>
+  <table>
+    <tr><th style="width:80px">类型</th><th>根因（一句话）</th><th>AdKernel 对应场景</th><th>对策</th></tr>
+    <tr><td><b>穿透</b></td><td>查"不存在"的数据，缓存永远不命中</td><td>伪造 ID 攻击（M0 模拟器 10%）</td><td>布隆前置拦截 + 空值缓存兜误判（30-60s）</td></tr>
+    <tr><td><b>击穿</b></td><td>单个热点 key 恰好过期，瞬间流量全打源</td><td>超级热用户特征过期瞬间</td><td>回源合并（Caffeine 同 key 单 loader）+ refreshAfterWrite 异步刷新</td></tr>
+    <tr><td><b>雪崩</b></td><td>大批 key 同时失效 / 缓存层宕机</td><td>预热脚本统一写入统一 TTL</td><td>TTL 随机偏移（10%-20%）+ L1 兜 L2 宕机 + 降级链</td></tr>
+  </table>
+  <p>记忆锚点：<b>穿透是"不存在"，击穿是"一个热的"，雪崩是"一批同时"——病根不同药方不同</b>。2026 实证案例：某系统零点预热统一 30min TTL，零点三十分集体过期，DB 8 秒打满、P99 40ms→12s——"设过期时间本来为了安全，恰恰是安全措施造成故障"，TTL 随机偏移一行代码消灭之。</p>
+</section>
+
+<!-- ============ 速览卡2 ============ -->
+<section id="card-caffeine">
+  <h2><span class="num">06</span>速览卡 · Caffeine 关键参数（AdKernel 配置卡）</h2>
+  <table>
+    <tr><th style="width:230px">参数</th><th>本项目的值</th><th>为什么是这个值</th></tr>
+    <tr><td>maximumSize</td><td>100,000</td><td>50 万用户 × 热头部 20%（幂律）≈ 10 万；画像 record 连同 key 与缓存条目开销 ~200B/条，峰值 ~20MB &lt; 堆 30% 界（与源层 50 万条 ~100MB 同口径）</td></tr>
+    <tr><td>refreshAfterWrite</td><td>15s</td><td>异步刷新、刷新期旧值可读（stale 兜底的一半）；实证案例 15s 平滑刷新零击穿</td></tr>
+    <tr><td>expireAfterWrite</td><td>10min</td><td>"旧值可读性"上界；比 L2（5min）长——上层过期时间 ≥ 下层，避免同时失效</td></tr>
+    <tr><td>recordStats</td><td>开</td><td>命中率/加载时长/驱逐数——M5 面板与调优曲线的数据源</td></tr>
+    <tr><td>executor</td><td>独立刷新池</td><td>刷新不挤占请求线程</td></tr>
+    <tr><td>W-TinyLFU（不可配，是算法）</td><td>—</td><td>Count-Min Sketch 记频率：热用户稳、长尾自动让位——匹配幂律流量</td></tr>
+  </table>
+</section>
+
+<!-- ============ 速览卡3 ============ -->
+<section id="card-latency">
+  <h2><span class="num">07</span>速览卡 · 三级延迟账本（性能数字的溯源终点）</h2>
+  <table>
+    <tr><th>层级</th><th>命中延迟</th><th>容量</th><th>角色</th></tr>
+    <tr><td>L1 Caffeine</td><td>P99 &lt; 0.1ms（微秒级）</td><td>10 万条（热的 20%）</td><td>消化 80%+ 流量；Redis 抖动时的兜底层</td></tr>
+    <tr><td>L2 Redis</td><td>P99 ≈ 1-2ms（本地 RTT）</td><td>近全量（TTL 5min+抖动）</td><td>多实例共享层；回源挡板</td></tr>
+    <tr><td>源（画像服务）</td><td>P99 ≈ 6-8ms（5ms 注入+开销）</td><td>50 万全量</td><td>广告主一方数据模拟；回源成本基准</td></tr>
+    <tr><td><b>加权总延迟</b></td><td><b>P99 ≈ 2ms</b>（80% L1 + 少量 L2）</td><td>—</td><td>对照基线：无缓存直查源 ≈ 12ms P99 —— <b>12ms→2ms 的两跳溯源到此为止</b></td></tr>
+  </table>
+  <p>面试话术："特征查询 P99 从 12ms 到 2ms，不是我把哪个单点加速了 6 倍，而是 80% 的请求根本不再走网络——命中率才是低延迟的第一杠杆，单点优化是第二杠杆。"</p>
+</section>
+
+<!-- ============ 动态雷达 ============ -->
+<section id="radar">
+  <h2><span class="num">08</span>动态雷达 · 2026（M1 相关）</h2>
+
+  <div class="radar-item"><span class="date">2026-09-28</span><b>实证：电商大促多级缓存复盘</b>——L1 Caffeine（W-TinyLFU + refreshAfterWrite 15s）就地消化 92,500 QPS（命中率 92.5%），Redis 分片 CPU 从 98% 红线回落 18.5%；布隆双缓冲重构后误判率 0.0098%；全链路命中率 99.88%，DB 回表仅 240 QPS。<span class="impact">对项目的影响：两级缓存价值的最强量级证据；refreshAfterWrite 15s 参数出处；布隆 fpp 口径出处。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-13</span><b>实战：SpringBoot+Caffeine+Redis 从设计到排坑</b>——本地短过期+远端长过期+随机偏移、先写 DB 再删缓存、五大坑（穿透/击穿/雪崩/一致性/多实例同步）排查记录。<span class="impact">对项目的影响：TTL 梯度设计（L1 短 L2 长）与随机偏移的工程依据。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-09</span><b>深潜：Caffeine 从 W-TinyLFU 到多级一致性</b>——Count-Min Sketch 频率素描原理、refreshAfterWrite 与 expireAfterWrite 语义区别、null 值穿透与空值包装。<span class="impact">对项目的影响：参数语义辨析（"refresh 期间旧值可读"是 stale 兜底的实现基础）；选型对比表依据。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-16</span><b>方法论：缓存三大问题工程化防护</b>——三类故障根因严格区分（穿透=查不存在、击穿=单热点瞬间失效、雪崩=批量同时失效），防护矩阵分开设计；"没有演练过的防护，和没有一样"。<span class="impact">对项目的影响：M1 验收全部以注入实验形式设计（注入 Redis 延迟/hang），防护必须演练。</span></div>
+
+  <div class="radar-item"><span class="date">2026-09-28</span><b>工程细节：三级缓存的两个失效函数代价</b>——L1 是"Redis 挂了还能撑住的那一层"（动机不是再快一点）；L2 反序列化失败静默回源（坏数据不让请求失败）；写缓存失败不影响返回；singleflight 按 key 合并。<span class="impact">对项目的影响：三条生产纪律直接采纳进读路径设计。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-18</span><b>案例：三马代驾缓存事故复盘</b>——城市级 key 统一 TTL 早高峰集体过期，RT 30ms→900ms、连接池打满；按三类分治后回源量降 87%，"把 Redis 全停掉，核心接口只降级不宕机"。<span class="impact">对项目的影响：降级链验收标准的口径——缓存层全挂时决策不失败，只降级。</span></div>
+</section>
+
+<!-- ============ DoD ============ -->
+<section id="dod">
+  <h2><span class="num">09</span>M1 验收清单（DoD）</h2>
+  <ul class="dod" id="dod-list">
+    <li><input type="checkbox" id="k01"><label for="k01">画像源服务可用：50 万用户、固定 seed 可复现、5ms 延迟注入可调</label></li>
+    <li><input type="checkbox" id="k02"><label for="k02">特征字段 × M2 策略映射表成文，6 字段无一悬空</label></li>
+    <li><input type="checkbox" id="k03"><label for="k03">两级缓存读路径贯通：L1 → L2 → 源逐级回填，写缓存失败不影响请求</label></li>
+    <li><input type="checkbox" id="k04"><label for="k04">L1 命中率 ≥ 80%（幂律流量稳态），三级延迟数字落盘</label></li>
+    <li><input type="checkbox" id="k05"><label for="k05">回源合并实证：500 并发同 key 冷查询，源层只收到 1 次</label></li>
+    <li><input type="checkbox" id="k06"><label for="k06">TTL 随机偏移生效：L2 批量写入后无同一秒集中过期（抽样验证）</label></li>
+    <li><input type="checkbox" id="k07"><label for="k07">布隆前置拦截：伪造 ID 稳态穿透率 = 0（源层零伪造查询）</label></li>
+    <li><input type="checkbox" id="k08"><label for="k08">空值缓存兜误判：布隆假阳性的伪造 ID 在 30-60s 窗口内只回源一次</label></li>
+    <li><input type="checkbox" id="k09"><label for="k09">两级注入实验通过：源 50ms 延迟 + Redis hang 30s → 决策成功率 100%、超时率 0</label></li>
+    <li><input type="checkbox" id="k10"><label for="k10">降级率分层可观测（degraded_stale / degraded_default），M0 延迟基线对照更新（12ms → 2ms）</label></li>
+  </ul>
+</section>
+
+<!-- ============ 参考 ============ -->
+<section id="refs">
+  <h2><span class="num">10</span>参考来源</h2>
+  <ul>
+    <li><a class="ext" href="https://blog.csdn.net/dicky_zhang3/article/details/166795788" target="_blank">缓存架构复盘：热点治理与多级缓存的实战收益（CSDN，2026-09-28）</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_31423955/article/details/167818787" target="_blank">SpringBoot+Caffeine+Redis 多级缓存实战：从设计到排坑（CSDN，2026-10-13）</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_31309419/article/details/167460982" target="_blank">Caffeine 本地缓存实战：从 Window-TinyLFU 到多级缓存一致性（CSDN，2026-10-09）</a></li>
+    <li><a class="ext" href="https://cloud.tencent.com/developer/article/2762174" target="_blank">缓存三大经典问题：穿透、击穿、雪崩的工程化防护（腾讯云开发者社区，2026-10-16）</a></li>
+    <li><a class="ext" href="https://developer.cloud.tencent.com/article/2752049" target="_blank">三级缓存：缓存鉴权不等于授权，以及两个失效函数的真实代价（腾讯云开发者社区，2026-09-28）</a></li>
+    <li><a class="ext" href="https://developer.cloud.tencent.com/article/2763550" target="_blank">三马代驾实战：缓存击穿、雪崩、穿透三类问题三套治法（腾讯云开发者社区，2026-10-18）</a></li>
+  </ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+  const KEY = 'adkernel-m1-dod-v1';
+  const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+  const boxes = Array.from(document.querySelectorAll('.dod input[type=checkbox]'));
+  boxes.forEach(b => {
+    b.checked = !!saved[b.id];
+    b.closest('li').classList.toggle('done', b.checked);
+    b.addEventListener('change', () => {
+      saved[b.id] = b.checked;
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      b.closest('li').classList.toggle('done', b.checked);
+    });
+  });
+  const links = Array.from(document.querySelectorAll('nav.sidebar a[href^="#"]'));
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const idx = sections.indexOf(e.target);
+        if (idx >= 0) links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(s => s && observer.observe(s));
+</script>
+</body>
+</html>

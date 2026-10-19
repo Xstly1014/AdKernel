@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · M3 深入手册</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --bg-2: #f9fafb;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.75; font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  nav.sidebar {
+    width: 250px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 28px 12px 40px; position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; background: var(--bg-2);
+  }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a { display: block; padding: 8px 14px; color: var(--text-2); text-decoration: none; border-radius: 6px; font-size: 13.5px; margin-bottom: 2px; transition: background .15s, color .15s; }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  pre .cmt { color: #94a3b8; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th { background: var(--bg-2); text-align: left; padding: 9px 12px; border: 1px solid var(--border); font-weight: 600; color: var(--text); }
+  td { padding: 9px 12px; border: 1px solid var(--border); color: var(--text-2); vertical-align: top; }
+  tr:nth-child(even) td { background: #fcfcfd; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 24px; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; background: #fff; }
+  .card .card-t { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .card p, .card li { font-size: 13px; color: var(--text-2); }
+  .card ul { margin-left: 18px; }
+  .card.green { border-top: 3px solid var(--green); }
+  .card.amber { border-top: 3px solid var(--amber); }
+  .card.red { border-top: 3px solid var(--red); }
+  .card.blue { border-top: 3px solid var(--accent); }
+
+  .dod-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+  .dod-item:hover { background: var(--bg-2); }
+  .dod-item input { margin-top: 5px; accent-color: var(--green); width: 15px; height: 15px; }
+  .dod-item label { cursor: pointer; font-size: 14px; color: var(--text-2); }
+  .dod-item.done label { text-decoration: line-through; color: var(--text-3); }
+  .dod-item .tag { font-size: 11px; color: var(--text-3); background: var(--bg-2); border-radius: 4px; padding: 1px 6px; margin-left: 8px; white-space: nowrap; }
+
+  .radar-item { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .radar-item .rt { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .radar-item .rt a { color: var(--accent); text-decoration: none; }
+  .radar-item p { font-size: 13px; margin-bottom: 4px; }
+  .radar-item .adopt { font-size: 12.5px; color: var(--green); font-weight: 600; }
+
+  .src-list li { margin-bottom: 10px; font-size: 13.5px; }
+  .src-list a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · M3 深入手册<small>限流、预算、对账与降级总开关</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#overview">总纲与伏笔收线</a>
+  <div class="group-label">五个任务</div>
+  <a href="#t1">任务1 · QPS 限流</a>
+  <a href="#t2">任务2 · 预算三级防线与 pacing</a>
+  <a href="#t3">任务3 · 跨天重置与日切</a>
+  <a href="#t4">任务4 · T+1 对账</a>
+  <a href="#t5">任务5 · 降级总开关</a>
+  <div class="group-label">速查</div>
+  <a href="#cards">三张速览卡</a>
+  <a href="#radar">动态雷达</a>
+  <a href="#dod">DoD 验收清单</a>
+  <a href="#refs">参考与来源</a>
+  <div class="group-label">手册导航</div>
+  <a href="AdKernel项目开发Spec.html">Spec v2 · 总纲</a>
+  <a href="AdKernel-M0深入手册.html">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html" class="active">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<h1>M3 · 限流、预算、对账与降级总开关</h1>
+<p class="subtitle">AdKernel 里程碑三 —— M2 是油门（会精细化花钱），M3 是刹车（花不超）、仪表盘（花得明白）和断电开关（出事能停）。</p>
+
+<!-- ============ 总纲 ============ -->
+<section id="overview">
+<h2><span class="num">00</span>总纲与伏笔收线</h2>
+
+<p>M2 结束时，AdKernel 已经能对每一次决策做出「参不参竞、出价多少」的精细化判断。但一个只会踩油门的系统是不完整的：<strong>决策在先、扣费在后</strong>的 RTA 时序天然带着超花风险；没有任何保护的决策接口在流量突增时会被打挂；钱花完了没有审计就无法证明系统没有撒谎。M3 的四个关键词——<strong>限流保护自己、预算防超花、对账证明清白、总开关一键断电</strong>——补上「花钱纪律」这最后一块业务拼图。</p>
+
+<div class="callout">
+<b>M3 与简历数字的对应关系（resume0.2.tex 第二条 bullet 溯源）：</b>「预算控制与对账：三级防线+pacing、超支&lt;1.5%、T+1 对账清零」——三个数字全部在 M3 交付：<strong>三级防线+pacing</strong> = 任务 2；<strong>超支&lt;1.5%</strong> = 任务 2 验收指标；<strong>T+1 对账清零</strong> = 任务 4 验收指标。
+</div>
+
+<h3>M2 埋给 M3 的伏笔（本册收线）</h3>
+<table>
+<tr><th>M2 伏笔</th><th>M3 收线位置</th><th>如何兑现</th></tr>
+<tr><td>频控 Lua 原子性论证（MULTI 不能分支 / WATCH 重试风暴）</td><td>任务 2 预算扣减</td><td>预算 L2 实扣复用同一套 Lua 原子性论据——同一份面试素材覆盖两个组件</td></tr>
+<tr><td>M2 分层降级（特征层保守 / 策略层中性）</td><td>任务 5 总开关</td><td>组件级降级之上补系统级分级开关，形成两级降级体系</td></tr>
+<tr><td>StrategyBundle + AtomicReference 不可变切换</td><td>任务 5 开关实现</td><td>开关状态同样用不可变+原子引用，编译期消灭并发问题</td></tr>
+<tr><td>频控「检查在决策、记录在回传」时点设计</td><td>任务 2 预算时点</td><td>预算同款两阶段：预扣在决策、实扣在回传——设计模式一致，认知成本减半</td></tr>
+</table>
+
+<h3>M3 埋给 M4 / M5 的伏笔</h3>
+<table>
+<tr><th>本册伏笔</th><th>下游收线</th></tr>
+<tr><td>对账差异四桶之「丢回传」桶</td><td>M4 归因回流：回传链路可靠性治理（重试/补偿/终态对齐）</td></tr>
+<tr><td>pacing 消耗曲线与格子账本</td><td>M4 AB 实验报表的成本侧数据源（实验报表不只看效果，还要看两组花费是否公平）</td></tr>
+<tr><td>限流器 + 降级开关就位</td><td>M5 全景压测：压测时验证限流保护有效性 + 混沌演练矩阵的开关验证 cell</td></tr>
+<tr><td>开关审计日志</td><td>M5 可观测收官：审计事件进监控面板，作为混沌演练的判定证据</td></tr>
+</table>
+
+<div class="callout green">
+<b>本册的核心面试叙事（一句话版）：</b>「RTA 的钱是后置扣费的——决策时承诺、点击时才扣费（CPC，M0 协议口径），中间有个无法撤回的时间窗，所以预算控制天然是三级防线加匀速消耗的对冲设计，而限流和总开关保证了这个系统在最坏情况下只会『少花钱』，永远不会『崩掉』或『失控花钱』。」
+</div>
+</section>
+
+<!-- ============ 任务1 ============ -->
+<section id="t1">
+<h2><span class="num">01</span>任务1 · QPS 限流：决策接口的自我保护</h2>
+
+<h3>问题驱动<span class="q">为什么决策接口必须有限流</span></h3>
+<p>M1 的多级缓存让 P99 停在 2ms，M2 的策略引擎让决策精细化——但这一切的前提是<strong>流量在系统承载范围内</strong>。两个现实场景会把 AdKernel 打挂：</p>
+<ul>
+<li><strong>流量突增</strong>：媒体侧运营活动导致请求量翻 3 倍，未命中缓存的请求全部穿透到画像源（M1 的 L2 降级链再深也架不住源被打穿），60ms 延迟预算全线击穿，媒体侧超时率超 5% 触发清退红线（M0 的腾讯清退红线）——<strong>限流缺失的代价不是报错，是被媒体清退</strong>；</li>
+<li><strong>重试风暴</strong>：媒体侧超时重试，超时请求和重试请求叠加，系统在过载边缘被重试流量推入雪崩。</li>
+</ul>
+
+<h3>决策矩阵：四种算法选型</h3>
+<table>
+<tr><th>算法</th><th>原理</th><th>关键缺陷 / 特性</th><th>适用</th></tr>
+<tr><td>固定窗口计数</td><td>窗口内计数、超限拒绝、到点清零</td><td><strong>临界突刺</strong>：0.9s 处 100 个 + 1.1s 处 100 个 = 2 秒内放行 200 个（2 倍突发）</td><td>粗粒度、对边界不敏感</td></tr>
+<tr><td>滑动窗口</td><td>窗口细分小格滑动统计</td><td>平滑但占内存高</td><td>精确限流</td></tr>
+<tr><td>漏桶</td><td>恒定速率流出</td><td>严格匀速、<strong>不允许任何突发</strong></td><td>流量整形、保护脆弱下游</td></tr>
+<tr><td><strong>令牌桶 ✓</strong></td><td>匀速放令牌、桶内可积攒</td><td><strong>允许可控突发</strong>、长期平均限速</td><td>API 限流标准选择</td></tr>
+</table>
+
+<div class="callout">
+<b>选型口诀（动态雷达实证）：</b>「限自己的系统用令牌桶（容忍突发），限别人的系统用漏桶（保护下游）」。AdKernel 是<strong>被调方</strong>——媒体调我们，我们保护自己，选令牌桶。我们的输出只是纯计算后的响应报文，没有需要整形的下游写操作，漏桶无用武之地。
+</div>
+
+<h3>单机还是分布式</h3>
+<table>
+<tr><th>方案</th><th>原理</th><th>取舍</th></tr>
+<tr><td>Guava RateLimiter（单机）</td><td>JVM 内令牌桶</td><td>零网络开销；<strong>多实例下各自计数，总量对不上</strong>（N 实例 = N 倍限额）</td></tr>
+<tr><td>Redis + Lua 中心化</td><td>全局共享桶、Lua 原子读判写</td><td>精确；每次请求多一次 Redis 往返（决策链路上加 1-2ms）</td></tr>
+<tr><td>配额分片</td><td>全局配额 ÷ 实例数，各限各的</td><td>零网络开销；流量不均时实例配额浪费或超限</td></tr>
+<tr><td>本地预扣减混合</td><td>实例批量从 Redis 取一小段配额，本地消耗完再取</td><td>精度换性能（细粒度抖动），大规模系统主流组合</td></tr>
+</table>
+<p><strong>AdKernel 决策</strong>：单实例部署起步，入口用 Guava RateLimiter（预热模式），但把限流值与限流器实例封装在 <code>RateLimitGate</code> 接口之后——未来多实例化时替换为「Redis + Lua + 本地预扣减」实现，业务代码零改动。这是把「单机够用」和「面试要讲分布式」同时拿下的做法：<strong>接口先行，实现可演进</strong>。</p>
+
+<h3>执行：三个工程要点</h3>
+
+<h4>1. 惰性时间推算（Lazy Refill），不要定时器</h4>
+<p>不要起后台线程每 1/rate 秒往桶里放一个令牌——请求到达时刻用时间差一次性补算：</p>
+<pre><code class="language-java">/**
+ * 令牌桶核心：读时间差 → 补令牌 → 判断 → 扣减。
+ * 惰性推算：无定时线程，无空转开销，成千上万条限流规则也扛得住。
+ * Guava RateLimiter 内部即此模型，这里手写版用于叙事，生产直接用 Guava。
+ */
+boolean tryAcquire(long nowMs) {
+    long elapsed = Math.max(0, nowMs - lastRefillMs);
+    tokens = Math.min(capacity, tokens + elapsed * rate / 1000); // 补令牌，封顶
+    lastRefillMs = nowMs;
+    if (tokens &gt;= 1) { tokens -= 1; return true; }
+    return false;
+}</code></pre>
+
+<h4>2. 预热（Warmup）</h4>
+<p>冷启动时桶是满的，开闸瞬间大流量全量涌入，会把还在 JIT 预热、缓存未填的系统和下游直接打穿。Guava 的 <code>RateLimiter.create(rate, warmupDuration)</code> 让令牌生成速率从低到高爬升——<strong>限流器自己也要热身</strong>。</p>
+
+<h4>3. 被限流之后返回什么：noBid，不是 429</h4>
+<div class="callout red">
+<b>普通接口限流与广告接口限流的本质区别：</b>普通接口超限返回 <code>429 + Retry-After</code>；RTA 决策接口超限返回的是 <strong>noBid（不参竞）</strong>——这是 M0 协议里天然存在的合法响应。被限流的请求不是「报错」，而是「这次生意我不做」。妙处有三：①媒体不会重试风暴（noBid 是正常响应不是失败）；②不参竞就不会赢、不会花钱，<strong>限流的代价是少赚钱，不是故障</strong>；③对账口径天然一致（M0 断言清单：被拒请求必须在账单中缺席——限流与断言直接联动，模拟器可验证限流真的生效了）。
+</div>
+
+<h4>限流三件套（缺一件就是没测试过的保险丝）</h4>
+<ul>
+<li><strong>降级联动</strong>：限流触发后的响应（noBid + reason=RATE_LIMITED）——reason 码继续全链路打点（M2 起的规矩）；</li>
+<li><strong>动态配置</strong>：限流值不写死，放配置（M2 热更新同款机制：文件 watch + 原子切换），压测与大促口径不同；</li>
+<li><strong>监控三指标</strong>：限流触发 QPS、触发后拒绝率、触发时段分布——限流频繁触发说明容量规划要重估，是告警不是常态。</li>
+</ul>
+
+<h3>验收预期</h3>
+<ul>
+<li>压测流量 1.5 倍于限流值：放行 QPS 稳定在限流值 ±5%，被拒请求平均 RT &lt; 1ms（快速失败，不占下游资源）；</li>
+<li>限流期间正常放行请求 P99 不劣化（保护有效性：过载时服务质量不滑坡）；</li>
+<li>模拟器断言：被拒请求（reason=RATE_LIMITED）在曝光/账单中 100% 缺席。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>capacity 设成无限大</td><td>突发全放行，等于没限</td><td>capacity 按下游瞬时承载反推（rate 的 1-2 倍），不是越大越好</td></tr>
+<tr><td>用固定窗口计数</td><td>跨清零点 2 倍突刺打挂下游</td><td>换令牌桶 / 滑动窗口</td></tr>
+<tr><td>GET 再 DECR 两条命令</td><td>并发下同时读到「还够」，超额放行</td><td>合并成一段 Lua 原子脚本（M2 同款论据）</td></tr>
+<tr><td>超限返回 500/裸 429</td><td>调用方重试风暴加剧雪崩</td><td>noBid / 429+Retry-After + 降级响应体</td></tr>
+<tr><td>无预热直接打满</td><td>冷启动瞬间压垮下游</td><td>warmup 爬升期</td></tr>
+<tr><td>限流值硬编码</td><td>大促/故障无法快速调整</td><td>配置中心动态下发 + 变更审计</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务2 ============ -->
+<section id="t2">
+<h2><span class="num">02</span>任务2 · 预算三级防线与 pacing：防超花</h2>
+
+<h3>问题驱动<span class="q">RTA 预算控制的本质难题</span></h3>
+<p>先把时序摆出来，这是整个任务 2 的根基：</p>
+<pre><code class="language-text">决策(此时承诺出价，钱还没花)
+  → 媒体竞价(用我们的 bidRatio)
+    → 赢了(曝光即将发生——CPC 下曝光本身不扣费，但点击随时可能来)
+      → 曝光发生(已展示，钱仍未花——计费点在点击)
+        → 点击发生(钱确定花了——CPC，M0 协议口径)
+          → 点击回传到达(我们才确切知道花了多少)</code></pre>
+<p><strong>检查预算的时刻（决策）永远早于确切知道花费的时刻（回传）。</strong>这两点之间所有已参竞的流量都无法撤回——这就是超花窗口（money in flight）。不设计防线的结果：日预算 10 万的计划，零点后 1 小时被幂律头部流量打爆，媒体账单 13 万，广告主投诉。<strong>超花不是 bug，是 RTA 时序的固有属性，只能对冲，不能消灭。</strong></p>
+
+<h3>决策：三级防线设计</h3>
+<table>
+<tr><th>防线</th><th>时机</th><th>动作</th><th>性质</th></tr>
+<tr><td><strong>L1 预扣</strong></td><td>决策时（同步）</td><td>决策通过即按<strong>估计成本</strong>预扣：<code>estCost = bid × winRate × ctr</code>（CPC：赢了且被点击才扣费；winRate/ctr 均为 M0 funnel.yaml 参数，在此复用）</td><td>乐观估计，低延迟，误差大</td></tr>
+<tr><td><strong>L2 实扣修正</strong></td><td>点击回传时（异步，CPC 计费点）</td><td>按回传携带的<strong>真实金额</strong>修正账本：先冲销该决策的预扣，再入账真实花费（Lua 原子，M2 频控同款论据）</td><td>精确对齐媒体账单口径</td></tr>
+<tr><td><strong>L3 硬阈值拒绝</strong></td><td>决策时（同步）</td><td>剩余预算 &lt; 安全垫（如日预算 5%）→ 直接 noBid，不再进入策略引擎</td><td>兜底：宁可少花，不可超花</td></tr>
+</table>
+<div class="callout">
+<b>三级防线的面试一句话：</b>L1 用估计值快速挡住大流量（误差换延迟），L2 用真实值持续纠偏（账本逐渐逼近媒体口径），L3 保证无论估计多离谱、回传多滞后，最后一分钱都有人看着。超支率 = 在飞窗口花费 + L1 估计误差，三级防线把这两项共同压在 1.5% 以内。
+</div>
+<p><strong>顺序有讲究：L3 检查放在 L1 之前、且放在策略引擎执行之前</strong>（预算不足就别浪费 CPU 算策略了——快速失败原则贯穿 M2/M3 一致）。</p>
+
+<h3>pacing：为什么不能让预算「上午烧完」</h3>
+<p>预算防超花只解决了「花不超」，没解决「花得匀」。M0 模拟器的流量是幂律分布（Top 20% 用户承载 80% 流量），叠加人群包定向后，头部时段消耗会远超均值——没有 pacing，日预算会在上午 10 点烧完，下午的优质流量（M4 实验将证明晚间转化率更高）一分钱都花不到。<strong>pacing 的业务本质：同样一笔预算，花在什么时刻是有效率的差别。</strong></p>
+
+<h4>目标轨迹线（Xandr Daily Pacing 思想裁剪）</h4>
+<pre><code class="language-text">目标消耗(t) = 日预算 × 可投放分钟数已过占比
+              （对齐投放时段；无时段限制 = 1440 分钟全天）
+
+每个 pacing 周期（15 分钟，对齐 Xandr 实证周期）：
+  偏差 = 实际消耗 - 目标消耗
+  偏差 &gt; +容差 → 收紧参竞（降低出价系数 / 概率性跳过流量）
+  偏差 &lt; -容差 → 放开参竞（恢复系数）</code></pre>
+<p>追赶必须有上限（Xandr 文档明确警告的 <strong>spend spike</strong> 尾部风险：晚间为追回欠账全放开，最后 30 分钟预算脉冲烧穿）——追赶速率封顶，宁可欠账过夜，不可尾部爆冲。</p>
+
+<h4>工程实现：pacing 格子（离散化）</h4>
+<p>不实现连续调节器，用更笨但更可解释的方案——把全天切成 5 分钟一格的预算格子（288 格），每格持有当日预算的 1/288（可按流量分时曲线加权，M0 漏斗参数化同款思路）。格子内预算耗尽 → 本格内概率性跳过；格子结束 → 剩余滚入下一格。优点：<strong>每分钱都能回答「属于哪个格子的账」</strong>，对账（任务 4）多了一层明细口径，pacing 曲线可直接画成监控面板。</p>
+
+<h4>Safety Budget 裁剪（Xandr 实证 → 我们的红线）</h4>
+<p>Xandr 建议 safety budget 设为日预算 5-10 倍 + 80% 处自动告警。5-10 倍是大型投放生态（多时区、多 bidder、回传延迟不可控）的宽容度；AdKernel 单时区、单实例、回传延迟由模拟器控制，<strong>裁剪为硬上限 1.1 倍日预算 + 80% 告警</strong>——80% 告警点直接采纳（业界共识），倍数按自身架构收紧，这也是「参数裁剪要有理由，不是照抄」的叙事素材。</p>
+
+<h3>执行：预算账本关键结构</h3>
+<pre><code class="language-java">/**
+ * BudgetLedger：每计划一本账（M2 CampaignContext 已预留挂点）。
+ * 金额一律用「分」为单位的 long —— 浮点累计误差是对账头号敌人（任务4坑表）。
+ */
+record BudgetState(
+    long dailyBudgetCent,        // 日预算（分）
+    long reservedCent,           // L1 预扣在途（决策加、回传冲销）
+    long spentCent,              // L2 实扣已花
+    long hardCapCent,            // L3 硬上限 = dailyBudget × 1.1
+    String budgetDate            // 归属日 yyyyMMdd —— 任务3 的主角
+) { }
+
+// L1 预扣（决策路径，须与频控一样原子 —— 同一 Lua 家族）
+// estCost = bid × winRate × ctr（CPC：赢且被点击才扣费），均来自 funnel.yaml；预扣失败 → noBid(reason=BUDGET_EXHAUSTED)
+// L2 冲销+实扣（回传路径，Lua 原子）：
+//   spent += realCost;  reserved -= estCostOfThisRequest;
+//   requestId → estCost 的映射在决策时写入，回传时凭 requestId 反查（M0 requestId 贯穿再次发力）</code></pre>
+
+<h3>验收预期</h3>
+<ul>
+<li>正常日：超支率（实扣 - 日预算）/ 日预算 &lt; <strong>1.5%</strong>（简历数字的实验来源）；</li>
+<li>混沌注入：回传延迟放大 10 倍 → 超支率仍 &lt; 3%（L3 硬上限兜住，验证防线独立性）；</li>
+<li>pacing：消耗曲线贴目标轨迹线（格子口径偏差 &lt; 10%），无尾部脉冲（最后 30 分钟消耗占比不高于全天均匀值 + 容差）；</li>
+<li>L1/L2 一致性：日终 reserved 归零（所有预扣都被冲销或超时清算——超时清算任务：预扣后 N 分钟无回传视为流拍，自动冲销，防止 reserved 越积越多把预算卡死）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>只预扣不冲销</td><td>reserved 单调上涨，预算「莫名」提前耗尽</td><td>预扣超时清算 + requestId 反查冲销（对账前置条件）</td></tr>
+<tr><td>预算检查放策略引擎之后</td><td>预算耗尽后还在烧 CPU 算策略</td><td>L3 检查前移至决策入口最早期</td></tr>
+<tr><td>pacing 追赶无上限</td><td>晚间欠账 → 尾部 30 分钟脉冲烧穿（spend spike）</td><td>追赶速率封顶，宁可欠账过夜</td></tr>
+<tr><td>格子粒度太粗（如按小时）</td><td>消耗忽停忽开，用户体验断层</td><td>5 分钟粒度起步，观测后调</td></tr>
+<tr><td>winRate/ctr 估计静态不更新</td><td>L1 估计误差随流量结构漂移放大</td><td>M4 归因数据回流后校准 winRate/ctr（埋伏笔：闭环校准）</td></tr>
+<tr><td>浮点金额记账</td><td>对账永远差零头，差异定位浪费在浮点误差上</td><td>分为单位 long，账单/账本/回传三处同口径</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务3 ============ -->
+<section id="t3">
+<h2><span class="num">03</span>任务3 · 跨天预算重置与日切边界</h2>
+
+<h3>问题驱动<span class="q">零点会发生什么</span></h3>
+<p>预算和频控一样是「自然日」口径（M2 已论证，对齐投放行业口径）。自然日意味着每天零点全部计划预算重置——两个坑：</p>
+<ul>
+<li><strong>重置风暴</strong>：零点整批重建预算 key / 重置内存状态，瞬时写压力集中；</li>
+<li><strong>日切归属</strong>：23:59:59.900 发出的决策，00:00:01 点击回传才到——这笔钱算哪天的？窗口在飞的请求横跨两天，账本归属不清则对账（任务 4）从第一天起就是糊涂账。</li>
+</ul>
+
+<h3>决策：三条规则</h3>
+<h4>规则一：归属日 = 决策时刻</h4>
+<p>钱的承诺发生在决策时（L1 预扣时刻），所以<strong>预算归属日以决策时刻为准</strong>。回传无论多晚到达，凭 requestId 反查决策时间戳，入账到决策当天的账本。这条规则让跨天在飞流量有了确定归属：23:59:59.900 的决策算昨天的账，哪怕回传零点后才到。<strong>归属规则先于实现——没有这条规则，任务 4 的对账差异第一桶（时间窗差异）就无法自动归类。</strong></p>
+
+<h4>规则二：新一天新 key，不用零点重置</h4>
+<p>预算状态键带日期：<code>budget:campaign:{campaignId}:{yyyyMMdd}</code>。新一天自然创建新 key，旧 key 当天不再被决策路径读写、留给对账读取后 TTL 过期。<strong>用命名空间消灭「零点全量重置」</strong>——没有重置操作，就没有重置风暴。这与 M1 缓存 TTL 随机偏移防雪崩是同一哲学：<strong>让时间自然分散危险操作</strong>。</p>
+
+<h4>规则三：时钟源统一 Redis TIME</h4>
+<p>「现在是哪一天」「现在是哪个 pacing 格子」这类判定必须用统一时钟。M2 频控已定 Redis TIME（Lua 内取时），预算沿用同一时钟源——<strong>频控的「今天」和预算的「今天」必须是同一个今天</strong>，否则会出现频控认为已重置而预算认为还没跨天的荒谬组合。多实例本地时钟漂移是分布式日切的经典事故源。</p>
+
+<h3>执行：日切时序推演</h3>
+<pre><code class="language-text">23:59:59.900  决策 D 发出，L1 预扣入 budget:c1:20261019（归属 19 日）
+00:00:00.000  新 key budget:c1:20261020 就绪，新决策全部入新账
+00:00:01.200  D 的点击回传到达（CPC 计费点）
+              → requestId 反查决策时间戳 20261019 23:59:59.900
+              → 冲销预扣 + 实扣入 budget:c1:20261019（昨日账本）
+00:05:00.000  预扣超时清算线程扫描 19 日账本：
+              D 已实扣 → 无事发生；若 D 一直没回传 → 冲销预扣（流拍）
+T+1 02:00     对账作业读取 budget:c1:20261019 终态（任务4）</code></pre>
+
+<h3>验收预期</h3>
+<ul>
+<li>日切压测：零点前后 30 秒持续打流量，无重置风暴、无请求失败；19/20 两日账本之和 = 全部回传金额（归属无泄漏）；</li>
+<li>跨天在飞流量：日切窗口内决策 100% 正确归属（模拟器断言：账单金额按决策时间戳聚合后与两日账本精确相等）；</li>
+<li>连续 3 天跨零点运行：pacing 曲线每日零点平滑衔接，无跳变。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>零点全量重置内存状态</td><td>瞬时写风暴 + 重置窗口请求失败</td><td>日期化 key 命名空间，新旧并存自然切换</td></tr>
+<tr><td>用本地时钟判日切</td><td>多实例时钟漂移 → 频控/预算跨天判定不一致</td><td>Redis TIME 统一时钟源（M2 定例沿用）</td></tr>
+<tr><td>归属日 = 回传时刻</td><td>跨天在飞流量归属随机，对账时间窗桶永远对不齐</td><td>归属日 = 决策时刻，回传只做入账不做归属</td></tr>
+<tr><td>时区混用</td><td>「自然日」在不同组件含义不同（UTC vs Asia/Shanghai）</td><td>全系统统一 Asia/Shanghai，配置常量单点定义，对齐媒体口径</td></tr>
+<tr><td>旧账本立即删除</td><td>对账作业无账可对</td><td>旧 key 保至 T+1 对账完成后 TTL 过期</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务4 ============ -->
+<section id="t4">
+<h2><span class="num">04</span>任务4 · T+1 对账：证明系统没有撒谎</h2>
+
+<h3>问题驱动<span class="q">没有审计的钱系统是黑箱</span></h3>
+<p>M0 的模拟器三合一设计中，媒体模拟器既负责回传（实时）又负责生成账单（T+1）——并且<strong>会故意制造两者不一致</strong>：按小概率丢回传、延迟回传、重复回传。这是模拟器的第四个隐藏角色：<strong>审计考官</strong>。如果 AdKernel 只记自己的账、从不与媒体账单比对，那么任务 2 的超支率、任务 3 的日切归属，全都建立在「系统自己说花了多少就花多少」的基础上。<strong>对账是数据闭环的最后一位审计员</strong>：用媒体的独立口径，验证我方账本的每一个数字。</p>
+
+<h3>决策：对账流水线</h3>
+<pre><code class="language-text">T+1 02:00 对账作业启动（避开零点窗口 + 跨天在飞已收敛）
+  1. 拉取媒体账单（模拟器生成的 T 日账单文件，按计划聚合）
+  2. 汇总我方账本 BudgetLedger（budget:c1:20261019 终态，同口径聚合）
+  3. 双向差集：
+     媒体有我无 → 丢单类      requestId 反查决策/曝光/回传三记录
+     我有媒体无 → 误记类      本方记账 bug 或流拍误实扣
+     双方都有金额不等 → 金额差异类
+     双方都有 requestId 相同但多条 → 重复计费类
+  4. 差异归桶（四桶模型）→ 前三桶自动处置，第四桶人工
+  5. 输出对账报告 → 差异清零判定 + 告警</code></pre>
+
+<h3>差异四桶模型（对账的差异定位方法论）</h3>
+<table>
+<tr><th>桶</th><th>特征</th><th>定位钥匙</th><th>处置</th></tr>
+<tr><td><strong>① 时间窗差异</strong></td><td>回传跨天/延迟到达，两边归属日不同</td><td>决策时间戳 vs 回传时间戳</td><td>按归属日规则重算后自动消除（任务 3 规则一的直接受益者）</td></tr>
+<tr><td><strong>② 丢回传</strong></td><td>媒体账单有、我方账本无（点击发生了回传丢了）</td><td>requestId 在我方决策记录中存在、回传记录中缺失</td><td>按账单金额补记 + 标记补偿来源（M4 回传可靠性治理的入口伏笔）</td></tr>
+<tr><td><strong>③ 重复计费</strong></td><td>同一 requestId 多次回传</td><td>requestId 幂等（M0 的贯穿钥匙第三次发力：频控、预算、对账三用）</td><td>去重后自动消除；幂等没做好此桶会溢出</td></tr>
+<tr><td><strong>④ 真实 bug</strong></td><td>前三桶都归不进去</td><td>逐条 requestId 完整链路回放</td><td>唯一需要人工修复的桶：修代码 + 复盘 + 回归用例</td></tr>
+</table>
+<div class="callout green">
+<b>四桶模型的价值：</b>差异出现时第一反应不是「查日志」，而是「进哪个桶」——前三桶是<strong>系统的正常呼吸</strong>（时序固有属性），自动归类自动处置；只有第四桶值得人半夜爬起来。<strong>「T+1 对账清零」的严格定义：连续 7 天，①③桶自动归类率 100%、②桶补偿率 100%、④桶零新增。</strong>这是简历数字的验收口径。
+</div>
+
+<h3>执行：对账报告结构</h3>
+<pre><code class="language-text">=== AdKernel T+1 对账报告 20261019 ===
+按计划聚合（单位：分）
+  计划          媒体账单    我方账本    差异    归桶
+  c1-拉新        987_654    987_001     653     ①时间窗 3 条(653)
+  c2-促活         62_310     62_310       0     清
+  c3-召回        145_002    144_856     146     ②丢回传 1 条(146) → 已补偿
+汇总：差异 4 条，①3 ②1 ③0 ④0 —— 对账结论：非零但清零口径达成
+（②桶补偿=我方账本已按媒体账单补记，两边一致）</code></pre>
+
+<h3>验收预期</h3>
+<ul>
+<li>模拟器注入 1% 丢回传率 + 0.5% 重复回传率：对账定位率 100%（每条差异都进桶，④桶零条）；</li>
+<li>注入 1 条真实记账 bug（如金额乘错系数）：④桶精确捕获该条，告警触发；</li>
+<li>修复后回归：连续 7 天对账报告满足清零口径（简历数字「T+1 对账清零」的完整证据链）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>聚合口径不一致</td><td>总差为零但明细乱，掩盖单条错误</td><td>双方都按「归属日 × 计划 × requestId」三键聚合，先对明细再对总量</td></tr>
+<tr><td>只对总量不对明细</td><td>一条 +100 一条 -100 互相抵消，bug 隐藏数月</td><td>明细级双向差集是主流程，总量核对只是最后一步</td></tr>
+<tr><td>浮点金额</td><td>差异定位浪费在浮点累计误差</td><td>三处（账单/账本/回传）同用分为单位的 long</td></tr>
+<tr><td>对账报告没人看</td><td>审计沦为归档</td><td>④桶非零即告警（不是日报是警报）；①②③桶自动处置静默归档</td></tr>
+<tr><td>②桶手动补记无标记</td><td>补偿与真实回传混在账本里，次月复盘无据可查</td><td>补偿入账打来源标记（compensated=true），对账报告单列</td></tr>
+<tr><td>对账时刻贴零点</td><td>跨天在飞未收敛，①桶虚高</td><td>T+1 凌晨 2 点启动（在飞已收敛 + 错峰）</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务5 ============ -->
+<section id="t5">
+<h2><span class="num">05</span>任务5 · 降级总开关：一键断电的分级设计</h2>
+
+<h3>问题驱动<span class="q">组件级降级之上的系统级开关</span></h3>
+<p>M2 已经做了组件级分层降级（特征层保守 / 策略层中性 / 预算层拒绝），但组件级降级有一个盲区：<strong>它假设「问题出在某个组件」</strong>。三种场景组件级降级无解：</p>
+<ul>
+<li>Redis 整体挂掉——M1 降级链走到 L2 就断了头（降级链自己的地基塌了）；</li>
+<li>发现策略 bug 正在大量错出价——需要立刻停用策略引擎，但 M2 的热更新需要先定位、再编译、再灰度，太慢；</li>
+<li>流量异常暴涨 10 倍且持续——限流在挡，但持续处于极限运行状态，应该主动收缩业务面。</li>
+</ul>
+<p><strong>需要的是一个站在所有组件之上的、不依赖任何被降级组件的、秒级生效的系统级开关。</strong></p>
+
+<h3>决策：四级开关（不是单一 on/off）</h3>
+<table>
+<tr><th>级别</th><th>名称</th><th>行为</th><th>业务代价</th></tr>
+<tr><td>L0</td><td>全开</td><td>正常全链路</td><td>—</td></tr>
+<tr><td>L1</td><td><strong>人群包模式</strong></td><td>跳过策略引擎/频控/预算精细化，回退 M0 的预计算人群包直接决策</td><td>精细度退化为 T+1 人群包水平（业务叙事闭环：<strong>RTA 降级为它要取代的东西，依然正确只是不聪明</strong>）</td></tr>
+<tr><td>L2</td><td>熔断缓存</td><td>只读 L1 本地缓存画像、禁一切 Redis 访问（L2/频控/预算 Redis 侧全部冻结，预算走内存账本上限控制）</td><td>频控失效风险 + 预算精度下降，由 L3 硬上限兜底</td></tr>
+<tr><td>L3</td><td><strong>总停</strong></td><td>全部请求返回 noBid(reason=KILL_SWITCH)</td><td>不参竞 = 不花钱 = 零损失，只是不赚钱</td></tr>
+</table>
+<div class="callout">
+<b>分级开关的设计哲学：</b>降级的每一步都向业务方退让一个「更笨但更稳」的版本，而不是直接断电。<strong>L1 人群包模式是本设计的灵魂</strong>——它证明降级设计尊重业务语义：即使在最坏情况下，广告主的钱依然只花在目标人群上（M0 人群包本来就是「保底正确」的逻辑），损失的只是 M2 的精细化收益。面试讲到这里，降级从「技术兜底」升维成「业务连续性设计」。
+</div>
+
+<h3>执行：三条实现纪律</h3>
+<h4>1. 开关状态本身用不可变 + 原子引用（M2 同款）</h4>
+<pre><code class="language-java">/**
+ * KillSwitch：分级状态一次整体发布，读侧永远无锁。
+ * 与 StrategyBundle 同一设计家族 —— 用不可变性消灭并发问题。
+ */
+record SwitchState(int level, String operator, String reason, Instant switchedAt) { }
+
+static final AtomicReference&lt;SwitchState&gt; CURRENT =
+    new AtomicReference&lt;&gt;(new SwitchState(0, "system", "init", Instant.MIN));
+
+static void switchTo(int level, String operator, String reason) {
+    CURRENT.set(new SwitchState(level, operator, reason, Instant.now()));
+    auditLog.write(level, operator, reason);   // 纪律2：审计
+}</code></pre>
+
+<h4>2. 开关审计日志：who / when / why / 何时恢复</h4>
+<p>事故复盘的第一问永远是「谁在什么时候为什么关的」。每次切换写审计事件（进 M5 监控面板），审计通道<strong>本地文件直写</strong>，不经过任何可能正在被降级的组件。</p>
+
+<h4>3. 恢复必须人工确认，禁止自动回 L0</h4>
+<p>故障常呈抖动形态（好 30 秒坏 30 秒），自动恢复会导致开关震荡（降级-恢复-再降级），每次震荡都是一次流量损失。降级自动、恢复人工——<strong>宁可多降级一会，不可反复横跳</strong>。</p>
+<div class="callout red">
+<b>致命坑预警：开关的配置通道绝不能依赖它要降级的组件。</b>开关配置若存 Redis，Redis 挂掉时你正好需要打开 L2 熔断——而开关本身读不出来了。开关通道：本地配置文件 + 内存 AtomicReference 双通道，配置中心作为第三通道仅作常态分发。<strong>断电开关的电源线不能接在被断电的电路里。</strong>
+</div>
+
+<h3>验收预期（混沌演练 cell）</h3>
+<ul>
+<li>cell-1：注入 Redis 宕机 → 自动降至 L2 + 预算内存兜底生效，决策持续（命中 L1 缓存的请求正常出价，未命中按特征层降级语义拒绝），恢复人工确认后回 L0；</li>
+<li>cell-2：注入策略 bug（错误 bidRatio）→ 人工 L1 人群包模式，60 秒内止血（全链路 noBid 化前完成切换）；</li>
+<li>cell-3：流量 10 倍持续 5 分钟 → 限流 + L3 总停组合验证，系统存活、恢复后无损；</li>
+<li>cell-4：开关震荡注入（模拟抖动故障）→ 验证「降级自动、恢复人工」纪律生效，无震荡。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>开关只有开/关两态</td><td>小故障也只能全停，业务全损</td><td>四级分级，最小代价止血</td></tr>
+<tr><td>开关配置走 Redis</td><td>Redis 挂时开关失灵，最需要它的时候它不在</td><td>本地文件 + 内存双通道，配置中心仅常态分发</td></tr>
+<tr><td>自动恢复</td><td>故障抖动 → 开关震荡，反复流量损失</td><td>降级自动、恢复人工</td></tr>
+<tr><td>切换无审计</td><td>复盘无法回答「谁关的、为什么」</td><td>审计事件本地直写 + 进监控面板</td></tr>
+<tr><td>降级语义与业务无关</td><td>降级 = 全量拒绝，广告主白等一天</td><td>L1 人群包模式：降级为保底正确版本，而非断崖</td></tr>
+</table>
+</section>
+
+<!-- ============ 速览卡 ============ -->
+<section id="cards">
+<h2><span class="num">06</span>三张速览卡</h2>
+
+<div class="card-grid">
+<div class="card blue">
+<div class="card-t">卡1 · 限流选型速查</div>
+<ul>
+<li><strong>口诀</strong>：保护自己用令牌桶，保护下游用漏桶</li>
+<li><strong>三参数</strong>：rate 定长期均值、capacity 定可控突发（按下游瞬时承载反推，1-2 倍 rate）、拒绝策略（noBid 而非 429）</li>
+<li><strong>三件套</strong>：降级联动 / 动态配置 / 监控告警——缺一件就是没测试过的保险丝</li>
+<li><strong>三算法缺陷</strong>：固定窗口临界 2 倍突刺、滑动窗口内存高、漏桶拒绝一切突发</li>
+<li><strong>实现纪律</strong>：惰性推算不用定时器、冷启动要预热、分布式要 Lua 原子</li>
+</ul>
+</div>
+<div class="card green">
+<div class="card-t">卡2 · 预算三级防线 + pacing</div>
+<ul>
+<li><strong>本质难题</strong>：决策在先扣费在后 → 超花窗口只能对冲不能消灭</li>
+<li><strong>L1 预扣</strong>：决策时 estCost = bid × winRate × ctr（CPC 口径），乐观估计快速挡流量</li>
+<li><strong>L2 实扣</strong>：回传凭 requestId 冲销预扣 + 入真实金额，Lua 原子</li>
+<li><strong>L3 拒绝</strong>：剩余 &lt; 5% 安全垫 → noBid，位置在策略引擎之前</li>
+<li><strong>pacing</strong>：5 分钟格子预算 + 目标轨迹线，追赶封顶防尾部 spike</li>
+<li><strong>红线</strong>：硬上限 1.1× 日预算，80% 告警（Xandr 实证裁剪）</li>
+<li><strong>超支 1.5% 构成</strong>：在飞窗口花费 + L1 估计误差</li>
+</ul>
+</div>
+<div class="card amber">
+<div class="card-t">卡3 · 对账四桶 + 日切三规则</div>
+<ul>
+<li><strong>日切规则</strong>：归属日=决策时刻 / 新日新 key 不重置 / 时钟源 Redis TIME</li>
+<li><strong>桶①时间窗</strong>：跨天归属差异，规则一自动消除</li>
+<li><strong>桶②丢回传</strong>：媒体有我无，requestId 定位，补偿入账打标记</li>
+<li><strong>桶③重复计费</strong>：requestId 幂等去重</li>
+<li><strong>桶④真 bug</strong>：唯一需要人工的桶，非零即告警</li>
+<li><strong>清零口径</strong>：连续 7 天，①③自动归类 100%、②补偿 100%、④零新增</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ============ 动态雷达 ============ -->
+<section id="radar">
+<h2><span class="num">07</span>动态雷达（2026 实证调研）</h2>
+
+<div class="radar-item">
+<div class="rt"><a href="https://cloud.tencent.com/developer/article/2761364" target="_blank">限流算法工程实践：令牌桶、漏桶与分布式限流（腾讯云开发者社区，2026-10）</a></div>
+<p>「限自己的系统用令牌桶，限别人的系统用漏桶」选型口诀；分布式三方案（中心化计数 / 配额分片 / 云网关）；限流三件套（降级联动、动态配置、监控告警）。</p>
+<p class="adopt">采纳：选型口诀与三件套直接进任务 1 叙事；「本地预扣减配额」进演进路线。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://bbs.huaweicloud.com/blogs/493276" target="_blank">多实例各自计数限流总量对不上，用 Redis 加 Lua 做原子限流（华为云社区，2026-09）</a></div>
+<p>单机限流多实例失效的完整论证；令牌桶 Lua 脚本（HMGET 存桶状态 + 时间差补令牌 + PEXPIRE 防冷 key 常驻）；多维度限流 key 设计。</p>
+<p class="adopt">采纳：任务 1 的 Lua 令牌桶实现范本；「读-判-写三步必须原子」与 M2 频控论据互相印证。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://developer.aliyun.com/article/1763051" target="_blank">告别高并发接口被打爆：计数器、滑动窗口与令牌桶限流的落地实践（阿里云开发者社区，2026-09）</a></div>
+<p>五个真实踩坑案例：固定窗口 2 倍突刺、capacity 过大等于没限、GET+DECR 竞态、多实例本地限流 N 倍放大、被限流返回 500 引发重试风暴。</p>
+<p class="adopt">采纳：五坑全部进任务 1 坑速查表——每个坑都有真实故障叙事支撑。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://learn.microsoft.com/en-us/xandr/monetize/daily-pacing" target="_blank">Daily Pacing（Microsoft Xandr 官方文档）</a></div>
+<p>工业级 pacing lever 设计：约 15 分钟周期调节参竞速率；明确警告 spend spike 尾部风险（最后 30 分钟追赶爆冲）；daypart 限制下的分钟数口径。</p>
+<p class="adopt">采纳：15 分钟调节周期与 spend spike 警告进任务 2；「追赶封顶」规则的权威出处。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://learn.microsoft.com/en-us/xandr/monetize/key-budgeting-and-pacing-concepts" target="_blank">Key Budgeting and Pacing Concepts（Microsoft Xandr 官方文档）</a></div>
+<p>Safety budget：硬性日消耗上限，建议 5-10 倍预期日消耗 + 80% 处自动告警；「无论 campaign 怎么配置，这个数绝对花不过」的兜底语义。</p>
+<p class="adopt">采纳：80% 告警点直接沿用；5-10 倍按自身架构裁剪为 1.1 倍（单时区单实例回传可控），「参数裁剪要有理由」的叙事素材。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://help.openai.com/en/articles/20001515-budget-pacing" target="_blank">Budget Pacing（OpenAI Ads 官方帮助中心，2026 更新）</a></div>
+<p>pacing 的业务语义官方表述：「花费领先于节奏时放缓投放，落后时继续投放以追赶」；pacing 不保证均匀花费、不保证花完——管理预期而非承诺。</p>
+<p class="adopt">采纳：pacing 的业务定位表述进任务 2 开头（「花在什么时刻是效率的差别」）。</p>
+</div>
+</section>
+
+<!-- ============ DoD ============ -->
+<section id="dod">
+<h2><span class="num">08</span>DoD 验收清单</h2>
+<p>勾选自动保存到浏览器本地存储（localStorage key: <code>adkernel-m3-dod-v1</code>），刷新不丢。</p>
+
+<div class="dod-item"><input type="checkbox" id="dod1"><label for="dod1">RateLimitGate 接口落地：令牌桶实现（预热模式）+ 分布式演进位，入口位置先于一切业务逻辑<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod2"><label for="dod2">超载压测：1.5 倍流量下放行 QPS 稳定 ±5%，被拒请求 RT &lt; 1ms，被拒记录在账单 100% 缺席（模拟器断言）<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod3"><label for="dod3">预算三级防线跑通：L1 预扣（requestId→estCost 映射）/ L2 实扣冲销 / L3 阈值拒绝（位置在策略引擎之前），金额全链路分为单位 long<span class="tag">任务2</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod4"><label for="dod4">超支率 &lt; 1.5%（正常日）且回传延迟放大 10 倍混沌下仍 &lt; 3%（L3 兜底独立性验证）<span class="tag">任务2·简历数字</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod5"><label for="dod5">pacing 格子 + 目标轨迹线上线：消耗曲线贴轨迹线（格子偏差 &lt; 10%），无尾部脉冲，硬上限 1.1× 日预算 + 80% 告警生效<span class="tag">任务2</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod6"><label for="dod6">日切三规则落地：归属日=决策时刻 / 日期化 key 无重置风暴 / Redis TIME 统一时钟；零点窗口压测归属零泄漏<span class="tag">任务3</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod7"><label for="dod7">预扣超时清算：无回传预扣 N 分钟后自动冲销，日终 reserved 归零<span class="tag">任务2/3</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod8"><label for="dod8">T+1 对账流水线上线：明细级双向差集 + 四桶归类；注入 1% 丢回传 + 0.5% 重复回传定位率 100%，④桶注入 1 条 bug 精确捕获告警<span class="tag">任务4</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod9"><label for="dod9">连续 7 天对账满足清零口径（①③自动归类 100% / ②补偿 100% / ④零新增）<span class="tag">任务4·简历数字</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod10"><label for="dod10">四级 KillSwitch 落地：本地+内存双通道、审计日志直写、恢复需人工确认；混沌 cell-1~4（Redis 宕机/策略 bug 止血/10 倍流量/震荡注入）全部通过<span class="tag">任务5</span></label></div>
+</section>
+
+<!-- ============ 参考 ============ -->
+<section id="refs">
+<h2><span class="num">09</span>参考与来源</h2>
+<ul class="src-list">
+<li><a href="https://cloud.tencent.com/developer/article/2761364" target="_blank">限流算法工程实践：令牌桶、漏桶与分布式限流 — 腾讯云开发者社区（2026-10）</a></li>
+<li><a href="https://bbs.huaweicloud.com/blogs/493276" target="_blank">多实例各自计数限流总量对不上，用 Redis 加 Lua 做原子限流 — 华为云社区（2026-09）</a></li>
+<li><a href="https://developer.aliyun.com/article/1763051" target="_blank">告别高并发接口被打爆：计数器、滑动窗口与令牌桶限流的落地实践 — 阿里云开发者社区（2026-09）</a></li>
+<li><a href="https://redis.io/docs/latest/develop/use-cases/rate-limiter/nodejs/" target="_blank">Token bucket rate limiter with Redis — Redis 官方文档</a></li>
+<li><a href="https://learn.microsoft.com/en-us/xandr/monetize/daily-pacing" target="_blank">Daily Pacing — Microsoft Xandr（Xandr Monetize 官方文档）</a></li>
+<li><a href="https://learn.microsoft.com/en-us/xandr/monetize/key-budgeting-and-pacing-concepts" target="_blank">Key Budgeting and Pacing Concepts（含 Safety Budget）— Microsoft Xandr</a></li>
+<li><a href="https://help.openai.com/en/articles/20001515-budget-pacing" target="_blank">Budget Pacing — OpenAI Ads 官方帮助中心（2026 更新）</a></li>
+</ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+// ---------- DoD 勾选持久化 ----------
+(function () {
+  var KEY = 'adkernel-m3-dod-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+  document.querySelectorAll('.dod-item input[type=checkbox]').forEach(function (cb) {
+    var id = cb.id;
+    cb.checked = !!saved[id];
+    cb.closest('.dod-item').classList.toggle('done', cb.checked);
+    cb.addEventListener('change', function () {
+      saved[id] = cb.checked;
+      cb.closest('.dod-item').classList.toggle('done', cb.checked);
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+})();
+
+// ---------- 侧栏滚动高亮 ----------
+(function () {
+  var links = document.querySelectorAll('nav.sidebar a[href^="#"]');
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var sections = document.querySelectorAll('main section[id]');
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        var a = map[en.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(function (s) { observer.observe(s); });
+})();
+</script>
+</body>
+</html>

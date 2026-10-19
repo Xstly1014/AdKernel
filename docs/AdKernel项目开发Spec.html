@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · 项目开发 Spec v2</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --bg-2: #f9fafb;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  nav.sidebar {
+    width: 250px; flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 28px 12px 40px;
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; background: var(--bg-2);
+  }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a {
+    display: block; padding: 8px 14px; color: var(--text-2);
+    text-decoration: none; border-radius: 6px; font-size: 13.5px;
+    margin-bottom: 2px;
+  }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-2); font-weight: 600; color: var(--text); }
+  td { color: var(--text-2); }
+  tr:nth-child(even) td { background: #fcfcfd; }
+
+  .kp { display: flex; gap: 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13.5px; background: var(--bg-2); }
+  .kp .tag { flex-shrink: 0; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 2px 8px; height: fit-content; }
+  .kp .body { color: var(--text-2); }
+  .kp .body b { color: var(--text); }
+
+  a.ext { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+  a.ext:hover { opacity: .8; }
+
+  @media (max-width: 860px) {
+    nav.sidebar { display: none; }
+    .content { padding: 28px 20px 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · 项目开发 Spec v2<small>实时广告决策引擎 · 全链路业务闭环</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#mission">业务初心与定位</a>
+  <a href="#arch">技术架构总览</a>
+  <div class="group-label">路线</div>
+  <a href="#roadmap">里程碑路线（M0–M5）</a>
+  <div class="group-label">决策与保障</div>
+  <a href="#adr">关键技术决策</a>
+  <a href="#schedule">排期与降级线</a>
+  <a href="#risk">风险与应对</a>
+  <div class="group-label">收口</div>
+  <a href="#resume">简历 bullet 终稿（四条对准 JD）</a>
+  <a href="#interview">面试深挖题</a>
+  <a href="#refs">参考来源</a>
+  <div class="group-label">深入手册</div>
+  <a href="AdKernel-M0深入手册.html">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<div>
+  <h1>AdKernel · 实时广告决策引擎（RTA）项目开发 Spec v2</h1>
+  <div class="subtitle">v2 相对 v1 的本质升级：从"一个高 QPS 决策接口"升级为"一条会呼吸的投放链路"。补齐转化归因回流、特征近线更新、对账、可观测告警、降级总开关、频控与多计划隔离——按<b>未来需要上线的标准</b>设计的完整业务闭环。简历时间线：2026年04月 – 07月（接替 GuardLM 位置）。</div>
+</div>
+
+<!-- ============ 01 业务初心 ============ -->
+<section id="mission">
+  <h2><span class="num">01</span>业务初心与定位</h2>
+
+  <h3>业务初心（面试讲故事的完整动机链）</h3>
+  <p>这是 v2 最重要的一节。<b>项目为什么存在，必须用业务回答，不能用 JD 回答。</b></p>
+  <table>
+    <tr><th style="width:120px">叙事环节</th><th>内容</th></tr>
+    <tr><td><b>场景主体</b></td><td>一家电商平台在抖音系媒体投放拉新广告，日预算十万级，年投放花费千万级</td></tr>
+    <tr><td><b>痛点</b></td><td>传统投放靠<b>人群包</b>圈人：人群包 T+1 更新——用户昨天刚下单，今天的拉新广告照投给他（重复投放 = 纯浪费）；沉睡的高价值用户没有差异化出价（机会成本）；低质流量无法在曝光前拒绝（预算流失）</td></tr>
+    <tr><td><b>方案</b></td><td>RTA：媒体每次广告曝光前实时调用广告主接口，广告主用<b>一方数据</b>（订单、会员状态、行为频次）在毫秒级窗口决策"参竞与否 + 出价系数"——决策从离线搬到在线，从静态搬到实时</td></tr>
+    <tr><td><b>有效性证明</b></td><td>不是"做完了"，是"证明有效"：AB 对照实验（RTA 策略组 vs 人群包基线组），报表对比 CPA / 参竞质量 / 预算利用率——技术优化直接产生用户增长价值</td></tr>
+    <tr><td><b>事故视角</b></td><td>上线不是终点：超花一分钱都是事故（防超花 + 对账）；RTA 超时率过高会被媒体降权甚至关停（超时预算硬约束的业务来源）；投放事故的第一响应是降级总开关（一键全量退出参竞）</td></tr>
+  </table>
+  <div class="callout"><b>一句话初心</b>：让广告主的每一分预算在每一次曝光机会上都被实时审视——该拒的拒、该加价的加价、已转化的立刻排除。整个系统的每个模块都能追溯到这句话：特征服务（拿一方数据）、策略引擎（定拒放规则）、预算控制（守住钱袋）、归因回流（闭环验证）、AB 实验（证明价值）。</div>
+
+  <h3>定位：与 mini-MQ 的拼图关系</h3>
+  <table>
+    <tr><th style="width:170px">维度</th><th>mini-MQ</th><th>AdKernel</th></tr>
+    <tr><td>项目形态</td><td>中间件（造轮子）</td><td>业务服务（用轮子造车）</td></tr>
+    <tr><td>流量形态</td><td>写密集（持久化/刷盘/副本）</td><td>读密集（缓存/无状态/低延迟）</td></tr>
+    <tr><td>一致性难点</td><td>副本间一致性（HW/epoch）</td><td>缓存一致性 + 预算一致性 + 归因正确性</td></tr>
+    <tr><td><b>闭环</b></td><td colspan="2">AdKernel 的埋点与转化回流走 mini-MQ——"造了轮子，还造了用轮子的车"；对账结论直接引用 mini-MQ 的零丢失实证</td></tr>
+  </table>
+</section>
+
+<!-- ============ 02 架构 ============ -->
+<section id="arch">
+  <h2><span class="num">02</span>技术架构总览</h2>
+
+  <h3>业务闭环全景（v2 核心升级：数据是流动的）</h3>
+  <pre><code>┌─ 投放端（模拟广告主后台）────────────────────────────────────────┐
+│  计划配置: 日预算 / 定向人群 / 策略规则 / 出价系数 / 频控上限        │
+└────────────┬───────────────────────────────────────────────────┘
+             ↓ 流量请求                ↑ 转化回传（曝光/点击/转化漏斗）
+┌─ 媒体模拟器（严格对手方，不只发请求）─────────────────────────────┐
+│  ① 流量生成: 用户分布/场景分布/QPS 曲线（含洪峰）                   │
+│  ② 决策校验: 黑名单不该参竞/预算耗尽不该参竞——业务合法性断言        │
+│  ③ 转化回传: 按点击率→转化率概率漏斗回传事件 + 模拟媒体账单          │
+└────────────┬───────────────────────────────────────────────────┘
+             ▼
+┌─ AdKernel 服务端 ────────────────────────────────────────────────┐
+│ ① 接入层: 鉴权 / 幂等(requestId 去重) / 超时预算控制 / 降级总开关  │
+│ ② 决策编排: 计划路由（多计划隔离）→ 特征 → 策略 → 预算             │
+│ ③ 特征服务: L1 Caffeine → L2 Redis → 兜底（stale / 默认画像）      │
+│ ④ 策略引擎: 规则 DSL + 频控 + 价值分层；热更新（原子切换）          │
+│    策略发布灰度 = AB 分流（新策略先放 5% 流量）                    │
+│ ⑤ 预算控制: 预扣滑动窗口 → 异步校正 → 超支熔断；pacing 匀速；跨天重置│
+│ ⑥ AB 实验平台: 一致性哈希分桶 + 分层正交                           │
+│ ⑦ 埋点与归因: 曝光/点击/转化 → 内存聚合 → mini-MQ                  │
+│    消费侧三出口: 归因引擎（末次点击）/ 特征近线回流 / 效果落库       │
+├──────────────────────────────────────────────────────────────────┤
+│  可观测层: 决策率/P99/降级率/预算消耗速率 面板 + 告警规则           │
+│    （消耗速率异常 → 疑似超花或超投，P0 级告警）                     │
+└────────────┬───────────────────────────────────────────────────┘
+             ▼
+┌─ 结算与实验 ─────────────────────────────────────────────────────┐
+│  T+1 对账: 媒体账单 vs 自记消耗 → 差异定位 → 治理                  │
+│  实验报表: RTA 组 vs 人群包基线组 —— CPA/参竞质量/预算利用率        │
+│  特征回流: 已转化用户下次请求即被排除（数据飞轮转动）              │
+└───────────────────────────────────────────────────────────────┘</code></pre>
+  <div class="kp"><span class="tag">闭环判定标准</span><div class="body">每个箭头都有数据流动、有异常出口、有对账兜底。面试讲出来是"我设计了一条<b>会呼吸的投放链路</b>"：投放配置影响决策 → 决策产生消耗 → 消耗回流归因 → 归因更新特征 → 特征反过来改变下一次决策 → AB 实验持续验证策略价值。任何一环断掉，系统就退化回静态人群包。</div></div>
+
+  <h3>一次请求的延迟预算分解（60ms 口径）</h3>
+  <table>
+    <tr><th>环节</th><th>预算</th><th>超支动作</th></tr>
+    <tr><td>网络往返（本地仿真）</td><td>~5ms</td><td>—</td></tr>
+    <tr><td>接入层校验 + 幂等 + 反序列化</td><td>~10ms</td><td>超时返回默认策略</td></tr>
+    <tr><td>特征查询（L1 命中为快路径）</td><td>~15ms</td><td>超时走 stale 兜底缓存（巨量实证口径 12min）</td></tr>
+    <tr><td>策略求值 + 预算预扣</td><td>~15ms</td><td>策略异常不阻断，走默认策略 + 告警埋点</td></tr>
+    <tr><td>响应序列化</td><td>~5ms</td><td>—</td></tr>
+    <tr><td><b>合计目标</b></td><td><b>P99 &lt; 50ms</b></td><td>全程软超时：宁可保守决策，绝不超时（超时率过高会被媒体降权）</td></tr>
+  </table>
+</section>
+
+<!-- ============ 03 路线 ============ -->
+<section id="roadmap">
+  <h2><span class="num">03</span>里程碑路线（M0–M5，约 9-10 周）</h2>
+  <p>延续深入手册模式：每里程碑单独产出深入手册（问题驱动→决策矩阵→执行→验收→坑速查表）。v2 里程碑相对 v1 的变化：M2 加多计划与频控，M3 加对账与降级总开关，M4 重构为归因回流 + AB 实验的完整闭环里程碑。</p>
+
+  <h3>M0 · 业务域建模与媒体模拟器（1 周）</h3>
+  <p><b>要解决的问题</b>：没有严格对手方，就没有真实约束。媒体模拟器必须扮演三种角色：流量生产者、业务合法性校验者、转化回传与账单生成者。</p>
+  <table>
+    <tr><th style="width:340px">任务</th><th>验收预期</th></tr>
+    <tr><td>1. 广告域模型成文（docs/domain.md，约 15 个名词）：用户/广告计划/广告位/出价系数/预算/频控/曝光/点击/转化/归因/人群包/实验分桶/pacing/对账/超时率</td><td>后续所有里程碑无歧义引用；每个名词带"为什么需要它"</td></tr>
+    <tr><td>2. RTA 协议定义（HTTP/JSON，对齐业界字段：requestId/userId/campaignId/adSlotId/scene → target/bidRatio）+ <b>转化回传协议</b>（曝光/点击/转化事件）+ <b>模拟账单格式</b></td><td>三份协议文档齐全，请求/回传/账单各有样例</td></tr>
+    <tr><td>3. 媒体模拟器：QPS 曲线（含洪峰时段）、用户分布（热头部 + 长尾）、决策合法性断言</td><td>能打 1 万+ QPS；断言生效：黑名单用户参竞 → 模拟器报错</td></tr>
+    <tr><td>4. echo 骨架（恒参竞）+ 转化回传模拟（按 CTR→CVR 概率漏斗）</td><td>全链路闭环跑通；延迟基线数字落盘（后续优化对照）</td></tr>
+  </table>
+
+  <h3>M1 · 特征服务与多级缓存（1.5 周）</h3>
+  <p><b>要解决的问题</b>：决策依赖用户特征，特征查不快一切白谈；特征查不对（穿透/过期），决策就是错的。</p>
+  <table>
+    <tr><th style="width:340px">任务</th><th>验收预期</th></tr>
+    <tr><td>1. 模拟画像库：Redis 预置 50 万用户特征（会员等级/黑名单/最近转化时间/行为频次）</td><td>数据生成脚本可复现</td></tr>
+    <tr><td>2. L1 Caffeine + L2 Redis 两级缓存</td><td>L1 命中率 ≥ 80%（热用户分布），命中/未命中延迟对比数字</td></tr>
+    <tr><td>3. 防穿透：空值缓存 + 布隆过滤器（非法用户 ID）</td><td>混入 10% 伪造 ID，画像库零穿透放行</td></tr>
+    <tr><td>4. 超时降级：特征超时走 stale 兜底 → 默认画像（保守策略）</td><td>注入 Redis 延迟，决策不超时、降级率可观测</td></tr>
+  </table>
+
+  <h3>M2 · 策略引擎、多计划路由与频控（1.5 周）</h3>
+  <p><b>要解决的问题</b>：多计划并存时的隔离与路由；策略是业务的大脑——改策略不停服、策略坏了不拖垮主链路、新策略先灰度再全量。</p>
+  <table>
+    <tr><th style="width:340px">任务</th><th>验收预期</th></tr>
+    <tr><td>1. 多计划路由：请求按 campaignId 路由到独立预算/策略/人群，互不串扰</td><td>双计划并行压测，消耗/决策各归各账</td></tr>
+    <tr><td>2. 规则 DSL（表达式引擎）：承载真实语义策略——"已购未满 7d → 不参竞；沉默高价值 → bidRatio 1.5；黑名单 → 拒"</td><td>5+ 条广告人话策略可配置运行</td></tr>
+    <tr><td>3. 频控：用户×计划维度的曝光次数上限（滑动窗口）</td><td>超频用户第二次请求被策略层拒绝，频控命中率可观测</td></tr>
+    <tr><td>4. 热更新 + 灰度：AtomicReference 原子切换；新策略先经 AB 分流放 5% 流量</td><td>压测中改策略 QPS 零抖动；灰度比例可调、可一键回退</td></tr>
+    <tr><td>5. 安全降级：策略异常不阻断主链路（默认策略 + 告警埋点）</td><td>注入策略抛异常，决策成功率不降</td></tr>
+  </table>
+
+  <h3>M3 · 限流、预算、对账与降级总开关（2 周）</h3>
+  <p><b>要解决的问题</b>：限流是八股，预算是业务——超花一分钱都是事故；预算防线没有对账兜底不完整；故障时要有保命开关。</p>
+  <table>
+    <tr><th style="width:340px">任务</th><th>验收预期</th></tr>
+    <tr><td>1. QPS 限流：令牌桶（先 Guava 后可自写）；过载返回限流码，媒体侧不重试风暴</td><td>洪峰注入（模拟器洪峰曲线），过载流量平滑拒绝</td></tr>
+    <tr><td>2. 预算三级防线：请求前预扣（滑动窗口）→ 埋点后异步校正 → 超支熔断</td><td>消耗跑满预算，最终超支率 &lt; 1.5%（对齐简历 bullet 与 M3 手册验收口径）</td></tr>
+    <tr><td>3. pacing 匀速消耗：按时间片分配额度（巨量"防超投防挤兑"同款问题）</td><td>消耗曲线平缓 vs 不做 pacing 的前松后紧对照曲线</td></tr>
+    <tr><td>4. 跨天边界：预算按自然日重置，跨零点请求归属正确（时钟边界测试）</td><td>零点前后压测，无重复预算/无预算泄漏</td></tr>
+    <tr><td>5. <b>对账</b>：T+1 比对模拟媒体账单 vs 自记消耗，差异定位流程成文（归属窗口/去重口径）</td><td>账单差异 = 0；人为注入差异（重复回传/乱序）能定位到根因</td></tr>
+    <tr><td>6. <b>降级总开关</b>：一键全量退出参竞（投放事故第一响应）</td><td>压测中触发，决策立即 100% 拒绝，QPS 不掉</td></tr>
+  </table>
+
+  <h3>M4 · 归因回流、特征近线更新与 AB 实验（2 周）</h3>
+  <p><b>要解决的问题</b>：v2 的灵魂里程碑——没有回流，"已购即排除"就是静态名单，系统自己打自己脸。AB 平台的价值不是技术组件，是<b>证明 RTA 有效</b>。</p>
+  <table>
+    <tr><th style="width:340px">任务</th><th>验收预期</th></tr>
+    <tr><td>1. 归因引擎：曝光→点击→转化事件按末次点击归因到计划/实验组（简化口径，成文说明）</td><td>归因正确性校验脚本：抽样 1000 条转化，归属 100% 正确</td></tr>
+    <tr><td>2. 特征近线回流：转化事件 → mini-MQ → 特征更新消费者 → L2 失效 → "已转化即排除"</td><td>转化发生到下次请求被排除，端到端延迟 &lt; 5s；对账零丢失（引用 mini-MQ 结论）</td></tr>
+    <tr><td>3. AB 分流平台：一致性哈希分桶（同用户同桶）+ 分层正交</td><td>分流稳定性 100%，分组流量比 &lt;1% 偏差</td></tr>
+    <tr><td>4. <b>RTA vs 人群包对照实验</b>：基线组用静态人群包决策，实验组用完整 RTA 链路，报表对比 CPA/参竞质量/预算利用率</td><td>报表能讲出业务结论：RTA 组 CPA 更优，差异可归因（排除了多少已购、加价了多少高价值用户）</td></tr>
+  </table>
+  <div class="callout amber"><b>mini-MQ 依赖隔离</b>：特征回流管道经接口抽象，mini-MQ 未就绪时降级为直接批量消费落库（M4 不阻塞）。切换故事本身是面试素材。</div>
+
+  <h3>M5 · 压测、可观测与收官（1.5 周）</h3>
+  <p><b>要解决的问题</b>：P99 &lt; 50ms 是军令状；没有可观测的系统不敢上线；收官交付物要支撑简历与面试。</p>
+  <table>
+    <tr><th style="width:340px">任务</th><th>验收预期</th></tr>
+    <tr><td>1. 全景压测：QPS 阶梯 + 延迟曲线 + 拐点（单机容量结论）</td><td>吞吐-P99 曲线；复用 mini-MQ M5 纪律（预热/3 轮/P99）</td></tr>
+    <tr><td>2. 火焰图归因 + GC 调优（JFR + jfr2flame）</td><td>≥2 组四段式调优战报（现象→归因占比→改动→复测）</td></tr>
+    <tr><td>3. 可观测面板 + 告警规则：决策率/P99/降级率/预算消耗速率；消耗速率异常 → 疑似超花 P0 告警</td><td>面板能回放一次注入事故（预算熔断/特征降级）的完整曲线</td></tr>
+    <tr><td>4. 收官档案：README（10 分钟跑通）+ ADR 0001-0009 + 战报 + 简历 bullet 定稿</td><td>数字组汇总表全部两跳可溯源；深挖题脱稿</td></tr>
+  </table>
+</section>
+
+<!-- ============ 04 决策 ============ -->
+<section id="adr">
+  <h2><span class="num">04</span>关键技术决策（ADR 预告，M5 收口成文）</h2>
+  <table>
+    <tr><th style="width:60px">#</th><th>决策</th><th>否决的备选</th><th>判据</th></tr>
+    <tr><td>0001</td><td>媒体模拟器三合一：流量生成 + 业务合法性断言 + 转化回传/账单</td><td>现成压测工具（JMeter/wrk）</td><td>压测工具只会发流量，不会<b>校验业务正确性</b>，也不会产生回流数据——闭环转不起来</td></tr>
+    <tr><td>0002</td><td>L1 Caffeine + L2 Redis 两级缓存，L1 优先</td><td>只 Redis / 只本地</td><td>巨量实证：L1 常驻、特征超时走 stale 兜底；纯 Redis 每跳 ~1ms 网络放大</td></tr>
+    <tr><td>0003</td><td>策略引擎：表达式引擎 + 策略模式框架 + 原子热更新</td><td>硬编码 if-else / 重量级规则引擎（Drools）</td><td>ADX 实证模式；改策略不发版；策略异常不阻断主链路</td></tr>
+    <tr><td>0004</td><td>预算预扣 + 异步校正 + 超支熔断三级防线 + pacing</td><td>单点实时扣减 / 事后对账</td><td>防超花是限流的业务化；pacing 是巨量防超投同款问题</td></tr>
+    <tr><td>0005</td><td>归因口径：末次点击归因</td><td>首次点击 / 多点加权归因</td><td>简化口径但显式成文（ADR 声明边界）；多点归因需要 Shapley 类模型，超出工程项目边界——<b>知道边界比堆功能成熟</b></td></tr>
+    <tr><td>0006</td><td>幂等：requestId 内存 LRU 去重窗口</td><td>不做幂等 / Redis 全局去重</td><td>媒体重试是常态；LRU 窗口覆盖重试时间尺度，Redis 去重把快路径变慢路径</td></tr>
+    <tr><td>0007</td><td>对账 T+1 文件比对 + 差异定位流程</td><td>不做对账（信任自记消耗）</td><td>计费对不上是广告系统 P0 事故；对账是预算防线的最后兜底</td></tr>
+    <tr><td>0008</td><td>策略发布灰度复用 AB 分流（先 5% 后全量）</td><td>独立灰度系统 / 直接全量</td><td>AB 分流天然是灰度基础设施——一次建设两处受益；直接全量 = 拿全量预算赌新策略</td></tr>
+    <tr><td>0009</td><td>埋点与特征回流走 mini-MQ</td><td>同步落库 / 直接批量写库</td><td>主链路零阻塞铁律 + 两个项目互相成就 + 可靠性结论复用</td></tr>
+  </table>
+</section>
+
+<!-- ============ 05 排期 ============ -->
+<section id="schedule">
+  <h2><span class="num">05</span>排期与降级线</h2>
+  <h3>三项目格局（v2 后）</h3>
+  <table>
+    <tr><th>项目</th><th>简历定位</th><th>执行决策</th></tr>
+    <tr><td>mini-MQ</td><td>2026.01–04 · 后台开发（写路径/中间件）</td><td>推进到降级线（M0–M2）后与 AdKernel 并行</td></tr>
+    <tr><td>AdKernel</td><td>2026.04–07 · 后台开发（读路径/业务服务）</td><td><b>主线全量</b>：M0–M5 约 9-10 周</td></tr>
+    <tr><td>GuardLM</td><td>已移除</td><td>冻结（资产不删，春招后若转向 AI 岗可复活）</td></tr>
+  </table>
+  <div class="callout green"><b>倒排锚点</b>：2027 届春招约 2027 年 3 月。AdKernel 9-10 周 → 2026 年 12 月底收官，留 1 月余量（简历终稿 + 深挖演练 + mini-MQ 收尾）。AdKernel 的 M4 依赖 mini-MQ 已做接口隔离，不阻塞。</div>
+  <h3>降级线</h3>
+  <ul>
+    <li><b>核心线（不可砍）</b>：M0 + M1 + M3 + M5 —— 协议与对手方、多级缓存、限流预算对账、压测数字 + 可观测面板。简历最低保障：低延迟 API + 缓存 + 预算 + 压测调优</li>
+    <li><b>增强线</b>：M4 归因回流与 AB 对照实验 —— <b>v2 的灵魂</b>，时间再紧也建议保住"归因 + 特征回流"（闭环叙事），可砍对照实验报表（保留分流）</li>
+    <li><b>裁剪顺序</b>：先砍 M4 对照实验报表 → 再砍 M2 灰度与频控（保留 DSL 与多计划）→ M0/M1/M3/M5 永不砍</li>
+  </ul>
+</section>
+
+<!-- ============ 06 风险 ============ -->
+<section id="risk">
+  <h2><span class="num">06</span>风险与应对</h2>
+  <table>
+    <tr><th style="width:280px">风险</th><th>概率</th><th>应对</th></tr>
+    <tr><td>广告业务概念陌生，做出来"形似神不似"</td><td>中</td><td>M0 强制 15 名词表；M2 策略必须用广告人话写；M4 对照实验强制产出业务结论</td></tr>
+    <tr><td>闭环链路长，联调复杂度爆炸</td><td>中</td><td>每里程碑自带集成测试断言（模拟器合法性校验）；M4 前每环已独立验收过</td></tr>
+    <tr><td>单机仿真撑不起"高并发"叙事</td><td>低</td><td>无状态可水平扩——单机压满是"单实例容量"严谨口径；叙事锚定延迟纪律与降级设计</td></tr>
+    <tr><td>双项目并行烂尾</td><td>中</td><td>AdKernel 主线、mini-MQ 到降级线；M5 方法论与压测工具复用降边际成本</td></tr>
+    <tr><td>简历时间线与实际执行错位（04–07 vs 实际 10 月起）</td><td>低</td><td>面试口径自洽准备：项目细节经得起深挖（ADR/数字/踩坑全有）是错位风险唯一的对冲——数字必须真实测出来</td></tr>
+  </table>
+</section>
+
+<!-- ============ 07 简历 ============ -->
+<section id="resume">
+  <h2><span class="num">07</span>简历 bullet 终稿（2026-10 收官复盘定版，四条对准 JD）</h2>
+
+  <p><b>写法复盘定版原则</b>：每条 bullet 统一为「业务痛点 → 手段方向 → 结果数字」三段式——痛点讲清楚"为什么这件事值钱"（超时红线=清退资格、超花=投放事故、T+1=预算浪费、无实验=价值无法量化），手段只给方向不给实现；全部技术细节（Caffeine 参数、Lua 原子性、一致性哈希、AtomicReference、Aviator 等）<b>下沉为面试追问钩子，不上简历</b>。简历时间线布局：AdKernel（2026.04–07）置于 mini-MQ（2026.01–04）之上，逆序展示。</p>
+
+  <table>
+    <tr><th>bullet（关键词）</th><th>JD 关键词映射</th><th>埋下的追问钩子（面试留白）</th></tr>
+    <tr><td>实时决策链路（P99 38ms @ 3.2万 QPS）</td><td>RTA 系统 / 服务端高并发低延迟</td><td>超时红线多高？五级流水线每级怎么分预算？降级出口怎么设计？总开关分几级、怎么保证开关自身可用？</td></tr>
+    <tr><td>广告预算防超花（超支 &lt;1.5% / 对账清零）</td><td>广告投放 / 预算系统</td><td>为什么"决策在前、扣费在后"必然超花？三级防线各挡什么误差？pacing 怎么控制投放节奏？对账差异怎么分桶归零？</td></tr>
+    <tr><td>转化回流数据闭环（回流 &lt;5s）</td><td>数据链路 / 用户增长</td><td>归因模型选什么口径？为什么近线不是实时或 T+1？回流为什么走消息队列、幂等怎么做？缓存怎么感知特征更新？</td></tr>
+    <tr><td>AB 实验体系（CPA 12%）</td><td>AB 实验 / 数据驱动</td><td>怎么分流的？广告实验互斥还是正交？怎么保证统计显著、怎么防止偷看早停？对照组为什么是人群包模式？</td></tr>
+  </table>
+
+  <pre><code>AdKernel 实时广告决策引擎（RTA） | 后台开发 | 2026年04月 -- 2026年07月
+背景: 广告主侧 RTA 系统——媒体每次广告曝光前实时询问"是否参竞、出价系数
+多少"，广告主基于订单、会员、行为等一方数据在毫秒级窗口内完成决策，替代
+传统 T+1 人群包，解决已购用户重复投放、高价值用户无法差异化出价的投放效率问题。
+
+▸ 实时决策链路: 媒体对决策接口的超时率设有清退红线，超时即丧失参竞资格。
+  设计五级决策流水线，逐级设定超时预算与降级出口，保障流量突增与局部故障
+  下决策服务持续可用；全链路 P99 38ms @ 3.2万 QPS
+▸ 广告预算防超花: 广告投放"决策在前、扣费在后"，天然存在无法撤回的超花
+  窗口，超花即投放事故。设计预算预扣、异步校正、超支熔断三级防线，配合
+  匀速消耗策略控制投放节奏，日预算超支率 <1.5%；T+1 对账媒体账单与内部
+  消耗，差异定位流程化清零
+▸ 转化回流数据闭环: 传统人群包 T+1 更新导致已转化用户次日仍被重复触达，
+  预算持续浪费。构建"转化回传→归因→特征回流"近线更新链路，"已转化即排除"
+  端到端延迟 <5s，用户特征时效由 T+1 提升至秒级
+▸ AB 实验体系: 为量化 RTA 相对人群包的业务价值，构建用户维度分流与实验
+  指标体系，完成 RTA 与人群包基线的随机对照实验，验证转化成本（CPA）优化
+  12%，为投放模式选择提供数据依据</code></pre>
+
+  <div class="callout green"><b>数字校准对照（与 resume0.2.tex 注释互链）</b>：P99 38ms/3.2万 QPS = M5 全景压测；超支&lt;1.5%、对账清零 = M3 预算防线与对账四桶；&lt;5s 回流 = M4 归因链路实测；CPA 12% = M4 对照实验报表。四条 bullet 的数字全部两跳可溯源，M5 收官时逐项对账。</div>
+</section>
+
+<!-- ============ 08 深挖题 ============ -->
+<section id="interview">
+  <h2><span class="num">08</span>面试深挖题（15 题，M5 手册逐题完整作答）</h2>
+  <table>
+    <tr><th style="width:40px">#</th><th>题</th><th>答题锚点</th></tr>
+    <tr><td>1</td><td>这个项目解决什么业务问题？</td><td>业务初心链（01 节）：人群包 T+1 → 重复投放浪费 → RTA 毫秒级决策；收尾"让每一分预算在每次曝光上被实时审视"</td></tr>
+    <tr><td>2</td><td>RTA 和 RTB 的区别？</td><td>筛选 vs 竞价：入场资格审核 vs 拍卖场；RTA 性能要求更苛刻——还没拿到入场资格已在消耗时间预算</td></tr>
+    <tr><td>3</td><td>60ms 延迟预算怎么分配？</td><td>五段分解；理念：超时预算显式化 + 每级有降级出口；超时率过高被媒体降权是业务来源</td></tr>
+    <tr><td>4</td><td>怎么证明 RTA 有效？</td><td>AB 对照实验设计：基线=静态人群包、实验=完整链路；看 CPA/参竞质量；差异可归因（排除了多少已购、加价了多少高价值）</td></tr>
+    <tr><td>5</td><td>"已转化即排除"怎么实现的？链路延迟多少？</td><td>转化回传 → mini-MQ → 特征消费更新 → L2 失效 → 下次请求排除；&lt;5s；为什么够快：事件驱动而非轮询</td></tr>
+    <tr><td>6</td><td>防超花怎么设计？</td><td>三级防线 + pacing + 对账兜底；"超花一分钱都是事故"——限流的业务化</td></tr>
+    <tr><td>7</td><td>对账对不上怎么排查？</td><td>差异定位流程：归属窗口（跨天边界）/ 重复回传（幂等）/ 乱序（时间戳）；对账是预算防线最后兜底</td></tr>
+    <tr><td>8</td><td>策略热更新怎么保证线程安全？灰度怎么做？</td><td>AtomicReference 原子切换；灰度复用 AB 分流先 5%——一次建设两处受益</td></tr>
+    <tr><td>9</td><td>特征查询超时怎么办？</td><td>stale 兜底（巨量 12min 实证）→ 默认画像保守策略；降级率可观测、可告警</td></tr>
+    <tr><td>10</td><td>媒体重复请求怎么办？</td><td>requestId LRU 去重窗口：覆盖重试时间尺度；去重放快路径（内存），不做 Redis 全局去重（慢路径）</td></tr>
+    <tr><td>11</td><td>频控为什么在策略层做而不是接入层？</td><td>频控是业务规则（每计划不同上限），接入层只做通用防护——分层原则</td></tr>
+    <tr><td>12</td><td>跨零点预算怎么算？</td><td>自然日重置 + 归属窗口显式化（23:59:59 的消耗归昨天）；时钟边界测试</td></tr>
+    <tr><td>13</td><td>为什么埋点异步化？</td><td>主链路零阻塞铁律；内存聚合摊薄；mini-MQ 对账零丢失结论直接复用</td></tr>
+    <tr><td>14</td><td>读高并发和写高并发（mini-MQ）差别？</td><td>缓存命中率 vs 刷盘吞吐；无状态水平扩 vs 副本一致性；软超时降级 vs 故障转移</td></tr>
+    <tr><td>15</td><td>和真实广告系统差多远？</td><td>诚实边界：裁剪了召回/排序/出价模型（算法团队领域）；归因简化为末次点击（显式 ADR）；我聚焦<b>工程约束</b>（延迟/预算/降级/闭环），工程侧与生产同构</td></tr>
+  </table>
+</section>
+
+<!-- ============ 09 参考 ============ -->
+<section id="refs">
+  <h2><span class="num">09</span>参考来源（2026 年调研）</h2>
+  <ul>
+    <li><a class="ext" href="https://blog.csdn.net/zhangzehai2234/article/details/149209997" target="_blank">广告系统中的 RTA 详解（CSDN，2026）——60ms 约束、50 万 QPS、Redis Cluster 特征存储、异步化降级</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/dividividiv/article/details/161202330" target="_blank">一文搞懂广告系统中的 RTA：从原理到工程实现（CSDN，2026）——协议字段、RTA/RTB 区别</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_29973493/article/details/166456757" target="_blank">RTA 实时接口架构设计与性能优化实践（CSDN，2026）——超时降级、分层决策、限流熔断</a></li>
+    <li><a class="ext" href="https://gapi.mdnice.com/writing/ff91dd64728a4ca981e098ac23e4c0b3" target="_blank">广告系统中的在线策略引擎设计（2026）——ADX 实证：策略模式+模板方法+原子热更新、本地限流器</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/2602_96088873/article/details/161692657" target="_blank">巨量引擎全域底层架构（CSDN，2026）——预算 pacing 防超投、特征缓存 L1/L2 分层实证</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_29039773/article/details/166865203" target="_blank">用户增长核心系统实战（CSDN，2026）——投放与触达闭环、归因口径、频控治理</a></li>
+  </ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+  const links = Array.from(document.querySelectorAll('nav.sidebar a[href^="#"]'));
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const idx = sections.indexOf(e.target);
+        if (idx >= 0) links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(s => s && observer.observe(s));
+</script>
+</body>
+</html>

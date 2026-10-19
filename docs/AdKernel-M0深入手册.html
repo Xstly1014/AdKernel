@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · M0 深入手册</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --bg-2: #f9fafb;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.75; font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  nav.sidebar {
+    width: 250px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 28px 12px 40px; position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; background: var(--bg-2);
+  }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a { display: block; padding: 8px 14px; color: var(--text-2); text-decoration: none; border-radius: 6px; font-size: 13.5px; margin-bottom: 2px; }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  pre .cmt { color: #94a3b8; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-2); font-weight: 600; color: var(--text); }
+  td { color: var(--text-2); }
+  tr:nth-child(even) td { background: #fcfcfd; }
+
+  .kp { display: flex; gap: 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13.5px; background: var(--bg-2); }
+  .kp .tag { flex-shrink: 0; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 2px 8px; height: fit-content; }
+  .kp .body { color: var(--text-2); }
+  .kp .body b { color: var(--text); }
+
+  .expect { border: 1px solid #a7f3d0; background: #ecfdf5; border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 13px; }
+  .expect .t { font-weight: 700; color: var(--green); font-size: 12px; margin-bottom: 6px; }
+
+  .dod { list-style: none; margin: 12px 0; }
+  .dod li { display: flex; gap: 10px; align-items: flex-start; padding: 7px 8px; border-radius: 6px; }
+  .dod li:hover { background: var(--bg-2); }
+  .dod input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; margin-top: 5px; cursor: pointer; flex-shrink: 0; }
+  .dod label { cursor: pointer; color: var(--text-2); }
+  .dod li.done label { color: var(--text-3); text-decoration: line-through; }
+
+  .radar-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .radar-item .date { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--accent); font-weight: 700; margin-right: 8px; }
+  .radar-item .impact { display: block; margin-top: 6px; font-size: 12.5px; color: var(--green); }
+
+  a.ext { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+  a.ext:hover { opacity: .8; }
+
+  @media (max-width: 860px) {
+    nav.sidebar { display: none; }
+    .content { padding: 28px 20px 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · M0 深入手册<small>业务域建模与媒体模拟器</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#overview">M0 的定位与伏笔</a>
+  <div class="group-label">任务深入</div>
+  <a href="#t1">任务1 · 广告域 15 名词表</a>
+  <a href="#t2">任务2 · 三份协议</a>
+  <a href="#t3">任务3 · 媒体模拟器</a>
+  <a href="#t4">任务4 · echo 骨架与漏斗</a>
+  <div class="group-label">附录</div>
+  <a href="#card-glossary">速览卡 · 广告域名词</a>
+  <a href="#card-assert">速览卡 · 对手方断言</a>
+  <a href="#card-cid">速览卡 · requestId 贯穿</a>
+  <a href="#radar">动态雷达 · 2026</a>
+  <a href="#dod">M0 验收清单（DoD）</a>
+  <a href="#refs">参考来源</a>
+  <div class="group-label">手册导航</div>
+  <a href="AdKernel项目开发Spec.html">Spec v2 · 总纲</a>
+  <a href="AdKernel-M0深入手册.html" class="active">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<div>
+  <h1>AdKernel · M0 深入手册</h1>
+  <div class="subtitle">地基里程碑：15 个名词、3 份协议、1 个严格对手方、1 条会呼吸的闭环。M0 结束时：媒体模拟器能以 1 万+ QPS 向 RTA echo 服务发流量、按概率漏斗回传曝光/点击/转化、生成模拟账单——<b>整条业务链路的数据骨架先于一切优化存在</b>。本册所有设计决策对齐 2026 年真实 RTA 生态（华为公开接口文档、腾讯对接指引、快手/巨量层级口径），不是想象出来的玩具协议。</div>
+</div>
+
+<!-- ============ 总纲 ============ -->
+<section id="overview">
+  <h2><span class="num">00</span>M0 的定位与伏笔</h2>
+
+  <h3>为什么第一册不做决策、先做名词和对手方<span class="q">问题驱动</span></h3>
+  <p>三个理由：① <b>消歧义是并行开发的前提</b>——"计划""单元""创意"在业界有严格层级（快手 ACQ 论文实证：advertiser → account → campaign → unit → creative），自造术语会在 M2 多计划路由时埋下混乱；② <b>对手方先行 = 验收先于实现</b>——媒体模拟器是 ADR-0001 定下的"流量生成 + 业务合法性断言 + 转化回传/账单"三合一角色，它先存在，后面每个里程碑的代码一写完就立刻被它拷问；③ <b>requestId 贯穿设计必须 M0 定死</b>——归因引擎（M4）的实现基础是"决策请求与回传事件用同一 requestId 串联"，这条线在协议里断了，后面无法补。</p>
+
+  <h3>本册埋的伏笔（后续哪里收）</h3>
+  <table>
+    <tr><th style="width:300px">M0 埋的线</th><th>在哪收</th></tr>
+    <tr><td>用户流量服从幂律分布（热头部 + 长尾）</td><td>M1：L1 缓存命中率 85% 的预言直接依赖这个分布——均匀分布会让缓存优化失去意义</td></tr>
+    <tr><td>QPS 曲线含洪峰时段</td><td>M3：限流与 pacing 的压测场景</td></tr>
+    <tr><td>响应含 expId（实验组透传）</td><td>M4：归因分组 + AB 报表的分组依据——华为真实接口实证字段</td></tr>
+    <tr><td>回传事件含 cost（点击计费）</td><td>M3：对账的数据源（自记消耗）</td></tr>
+    <tr><td>断言：超时率红线</td><td>M5：可观测面板的超时率告警——腾讯清退标准（>5% 冻结）是业务口径</td></tr>
+    <tr><td>延迟基线 JSONL 落盘</td><td>M1/M5：一切优化的对照基线</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务1 ============ -->
+<section id="t1">
+  <h2><span class="num">01</span>任务1 · 广告域 15 名词表</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>为什么不直接开写代码？因为广告系统是<b>术语密集型</b>业务——你已有的手册里"计划"出现过无数次，但"计划"和"单元"什么关系、"预算"挂在哪一层、"出价"和"出价系数"是不是一回事，这些不提前钉死，M2 的多计划路由就会写出串预算的 bug。业界有现成层级口径（快手 ACQ 论文的五层结构、华为鲸鸿动能的三层管理），<b>对齐业界而不是自造</b>，面试官一听术语就知道你研究过真实系统。</p>
+
+  <h3>决策矩阵：层级怎么裁剪</h3>
+  <table>
+    <tr><th>方案</th><th>内容</th><th>判定</th></tr>
+    <tr><td>全层级（业界）</td><td>广告主 → 账户 → 计划 → 单元 → 创意</td><td>× 单元层（承载关键词/创意变体）对 RTA 决策无独立作用，凭空增加一层路由</td></tr>
+    <tr><td><b>裁剪后（采用）</b></td><td>广告主 → <b>计划</b>（预算/策略/人群的独立控制单元）→ 创意（仅名词保留，响应字段可选）</td><td>✓ 预算按计划分配、出价系数按计划策略计算——与百度投放侧实证口径一致："预算只能按计划分配"</td></tr>
+  </table>
+  <div class="kp"><span class="tag">为什么预算挂计划不挂账户</span><div class="body">投放侧实证（2026-10 百度账户结构文章）："预算只能按计划分配，出价只能按单元设置"——计划是预算的独立控制单元。我们的防超花（M3）因此天然是<b>计划维度</b>的：每个计划独立预扣/熔断，一个计划花爆不影响另一个计划。这个裁剪在面试里是加分项："我裁掉了单元层，因为 RTA 决策不消费单元信息——裁剪依据是数据流分析，不是偷懒。"</div></div>
+
+  <h3>执行：docs/domain.md 规格</h3>
+  <p>15 个名词，每个名词三段：定义一句话、<b>为什么需要它（业务动机）</b>、在 AdKernel 里挂在哪层。完整表格见速览卡，两个示范条目：</p>
+  <pre><code>## 出价系数（bidRatio）
+定义: 广告主对单次出价的动态调节因子, 作用于媒体侧原始出价之上。
+为什么需要: RTA 的价值不止"要/不要"的二值筛选——高价值沉默用户 bidRatio 1.5
+  是"多花钱买确定性", 低价值用户 0.5 是"降价避险"。二值筛选浪费了信号强度。
+挂在: 响应字段, 由策略引擎（M2）计算, 预算引擎（M3）不感知。
+
+## 超时率（timeout rate）
+定义: RTA 响应超时次数占总请求数的比例。
+为什么需要: RTA 的生存指标——不是"慢一点没关系", 腾讯对接指引明确
+  "超时率或错误率大于 5%, 警告后 7 天未解决 → 冻结请求"。
+  超时的后果是媒体按默认策略处理 + 商务层面被清退。
+挂在: M0 模拟器统计, M5 告警规则（红线告警值 1%, 预留安全边际）。</code></pre>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>15 个名词三段俱全，术语与业界对齐（campaign/bidRatio/expId 等英文名可用）</li>
+      <li>层级图一页画清：广告主 → 计划 → （创意，名词保留），预算挂计划</li>
+      <li>自检：随机挑 3 个名词，能不看文档讲出"为什么需要它"</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>"计划"和"单元"混用</td><td>中文语境两词近义，业界是严格父子层</td><td>domain.md 首页放层级图；代码中统一用 campaign 一词，注释禁用"单元"</td></tr>
+    <tr><td>名词表写成术语词典</td><td>只有定义没有"为什么需要"</td><td>每个名词必须有业务动机段——写不出来的名词就是不需要的，删</td></tr>
+    <tr><td>把"人群包"当贬义词不写进文档</td><td>人群包是"被取代的方案"，感觉不重要</td><td>恰恰要写清：它是 M4 对照实验的<b>基线组</b>，没有它"RTA 有效"无从证明</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务2 ============ -->
+<section id="t2">
+  <h2><span class="num">02</span>任务2 · 三份协议</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>协议是系统的宪法，M4 归因、M3 对账、M2 灰度的实现自由度全在这里被限定。<b>核心设计只有一条主线：requestId 贯穿</b>——决策请求、曝光、点击、转化、账单五类记录用同一 requestId 串联，这是末次点击归因、幂等去重、对账定位三条链路的共同钥匙（华为真实接口的 transUniqueId 字段就是这个用途的实证）。</p>
+
+  <h3>决策一：字段对齐业界实证，不闭门造车</h3>
+  <pre><code>// ① RTA 决策请求（媒体 → AdKernel）      对齐: 华为鲸鸿动能 RTA 接口文档(2026-07)
+{ "requestId": "req-8f3a…",          // 全链路贯穿 ID = 归因的钥匙
+  "requestTime": 1763011200000,
+  "campaignId": "cmp-001",
+  "userId": "u-hash-7c2e…",           // 模拟哈希 ID(华为: oaid/ifa 脱敏传输)
+  "adSlotId": "slot-feed-1001",       // 广告位(feed/开屏)
+  "scene": "feed",                   // 场景, 影响策略
+  "sign": "hmac…" }                  // 鉴权: HmacSha256(requestId+requestTime+userId, secretKey)
+
+// ② RTA 决策响应（AdKernel → 媒体）
+{ "code": 0,                         // 0 正常; 限流/降级用专用码(M3 伏笔)
+  "target": true,                    // 是否参竞
+  "bidRatio": 1.5,                   // 出价系数(华为 priceWeight 实证字段)
+  "expId": "exp-01-bucketA",         // 实验组透传!(华为 expId 实证) —— M4 归因分组依据
+  "reason": "high_value_silent" }    // 决策原因码: 调试 + M4 归因细分的素材
+
+// ③ 转化回传（媒体 → AdKernel，漏斗逐级上报）
+{ "requestId": "req-8f3a…",         // ← 与决策请求同一 ID —— 贯穿设计
+  "eventType": "CLICK",             // EXPOSURE / CLICK / CONVERT
+  "eventTime": 1763011203120,
+  "campaignId": "cmp-001",
+  "expId": "exp-01-bucketA",        // ← 响应里的分组被媒体原样带回
+  "cost": 0.7 }                      // 点击计费金额(CPC) —— M3 对账的自记消耗源
+
+// ④ 模拟账单（T+1 日级文件，媒体侧生成）
+{ "date": "2026-10-18", "campaignId": "cmp-001",
+  "totalCost": 12345.67, "impressions": 987654, "clicks": 19753 }</code></pre>
+  <div class="kp"><span class="tag">expId 闭环是本册最重要的协议设计</span><div class="body">AdKernel 在响应里告诉媒体"这次决策属于实验组 bucketA"→ 媒体回传事件时原样带回 → 归因引擎按 expId 分组统计 CPA → AB 报表。这条字段不设计，M4 的 AB 实验就要另建分组通道。业界真实接口（华为 expId 字段）证明这不是过度设计——<b>广告主的实验分组必须自己透传，媒体不会替你记</b>。</div></div>
+
+  <h3>决策二：鉴权用 HmacSha256 签名（对齐华为）</h3>
+  <p>sign = HmacSha256(requestId + requestTime + userId, secretKey)。为什么不是简单 API Key：签名覆盖了请求体关键字段，防篡改 + 防重放（requestTime 参与签名，过期签名直接拒）。M0 的模拟器与 echo 服务共享 secretKey 即可，实现成本约 20 行。</p>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>三份协议（决策请求/响应、转化回传、模拟账单）成文：docs/protocol/*.md，各带样例 JSON</li>
+      <li>requestId 五类记录贯穿可追溯：手工构造一条请求，其曝光/点击/转化回传能被同一 ID 串起</li>
+      <li>鉴权：篡改签名 → 401；过期时间戳 → 401</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>回传事件里没有 expId</td><td>协议设计时觉得"媒体怎么会知道我的实验组"</td><td>就是响应里带过去、媒体带回来——自证闭环。M4 归因断链的最大隐患，M0 必须锁死</td></tr>
+    <tr><td>cost 只在转化事件里带</td><td>混淆计费节点</td><td>CPC 计费挂在<b>点击</b>事件上（曝光/点击/转化三层漏斗，花钱在点击）；M3 对账口径以此为准</td></tr>
+    <tr><td>requestId 用自增整数</td><td>图省事</td><td>必须随机 UUID/雪花——自增可预测，M3 对账幂等去重（桶③重复计费）和分布式部署都会踩</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务3 ============ -->
+<section id="t3">
+  <h2><span class="num">03</span>任务3 · 媒体模拟器（严格对手方）</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>ADR-0001 已定：JMeter/wrk 只会发流量，不会<b>校验业务合法性</b>，也不会<b>产生回流数据</b>。模拟器承担三个角色：流量生产者（真实分布）、裁判（断言违规）、数据源（漏斗回传 + 账单）。它先于 RTA 服务存在——<b>裁判先于运动员</b>是验收式开发的纪律。</p>
+
+  <h3>决策一：技术选型</h3>
+  <table>
+    <tr><th>方案</th><th>优势</th><th>劣势</th><th>判定</th></tr>
+    <tr><td><b>Java 21 虚拟线程 + HttpClient（采用）</b></td><td>每请求一个虚拟线程，代码直写同步逻辑；单机 1 万+ QPS 轻松达成</td><td>吞吐上限低于 Netty（约 5-10 万级）</td><td>✓ M0 echo 阶段瓶颈不在客户端；上限足够用到 M5 压测（届时可切 Netty 生成器）</td></tr>
+    <tr><td>Netty 异步客户端</td><td>吞吐上限极高</td><td>回调/事件驱动复杂度，模拟器写起来比被测服务还难</td><td>× 优先级错了：模拟器要的是"可信"，不是"快"</td></tr>
+    <tr><td>JMeter + 自定义断言插件</td><td>现成 UI</td><td>无法实现漏斗回传/账单生成；断言表达能力弱</td><td>× ADR-0001 已否决</td></tr>
+  </table>
+
+  <h3>决策二：流量分布——幂律，不是均匀</h3>
+  <p>用户流量按幂律分布（Zipf，s≈1）：20% 热用户承载约 80% 流量。这不是学术洁癖——<b>M1 缓存命中率的全部意义建立在热用户存在的前提上</b>：均匀分布下任何局部缓存都约等于全量缓存，命中率优化的叙事直接作废。真实媒体流量天然头部集中（活跃用户反复请求），模拟器必须复现这一点。</p>
+  <pre><code>// 用户抽取: Zipf 采样 + 少量伪造 ID（10%, M1 防穿透的靶子）
+// QPS 曲线: 可配置 shape —— 平峰 3000 → 晚高峰 8000 → 洪峰 spike 15000（持续 30s）
+// 场景分布: feed 70% / splash 30%（开屏）—— M2 场景化策略的输入</code></pre>
+
+  <h3>决策三：断言清单（裁判的判罚规则）</h3>
+  <table>
+    <tr><th style="width:220px">断言</th><th>违规判定</th><th>依据</th></tr>
+    <tr><td>黑名单用户参竞</td><td>target=true → 记违规</td><td>策略语义正确性（M2 前用静态名单校验）</td></tr>
+    <tr><td>响应超 60ms</td><td>记超时（按媒体默认策略处理）</td><td>主流媒体 60-100ms 硬限（2026 综述口径）</td></tr>
+    <tr><td>超时率 > 1%（红线告警）</td><td>裁判报告标红</td><td>腾讯清退红线 5%（我们留 5 倍安全边际）</td></tr>
+    <tr><td>协议字段缺失/非法</td><td>记错误</td><td>契约测试基础</td></tr>
+    <tr><td>验签失败</td><td>记错误</td><td>鉴权正确性</td></tr>
+  </table>
+  <div class="callout red"><b>超时率不是技术指标，是生存指标</b>——腾讯 RTA 对接指引（2025-11 更新）原文："客户 RTA 超时率或错误率大于 5%，且警告后 7 天内仍未解决的……直接冻结客户 RTA 请求。"M0 把这条红线写进裁判，M5 的告警规则就有了业务出处，面试讲"为什么 P99 这么重要"时，答案是合同级的。</div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>稳定输出 1 万+ QPS（洪峰模式 1.5 万），持续 ≥5 分钟，报告延迟分布（P50/P99）</li>
+      <li>断言生效实证：echo 服务故意插入黑名单用户仍返回参竞 → 裁判报告出现违规记录</li>
+      <li>流量分布验证：抽样统计 Top20% 用户承载流量占比 ≈ 80%</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>模拟器自己先打满 CPU，QPS 上不去</td><td>JSON 序列化/验签在热循环里重复创建对象</td><td>复用 ObjectMapper 实例；验签开关分级（M0 压测档可关）；监控模拟器自身 CPU（裁判不能先累死）</td></tr>
+    <tr><td>洪峰 spike 期延迟数据失真</td><td>连接池打满，排队时间混进统计</td><td> HttpClient 连接池参数显式配置并记录口径；洪峰数据单独分桶统计</td></tr>
+    <tr><td>Windows 环境端口耗尽</td><td>1 万 QPS 临时端口回收慢</td><td>长连接复用（keep-alive）；TIME_WAIT 观察项写进 docs</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务4 ============ -->
+<section id="t4">
+  <h2><span class="num">04</span>任务4 · echo 骨架与转化漏斗</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>echo（恒参竞）的意义不是"写个 Hello World"：① 打通<b>全链路数据骨架</b>——请求→决策→按漏斗概率回传→账单文件生成，M0 结束时闭环每一段管道都是通的，后面五个里程碑只是往管道里换更好的零件；② <b>落盘延迟基线</b>——未来一切"优化了 X ms"都对照这组数字。</p>
+
+  <h3>决策：漏斗概率参数化（不是拍脑袋常量）</h3>
+  <pre><code>// 转化漏斗(模拟器侧): 参竞决策 → 竞价胜出 → 曝光 → 点击 → 转化
+winRate    = 0.6     // 竞价胜出率(简化: 不模拟真实竞价, M5 归因说明裁剪)
+ctr        = 0.02    // 点击率: 信息流行业基准 1%-3%
+cvr        = 0.03    // 转化率: 电商行业基准 1%-5%
+// 三者进 config/funnel.yaml —— M4 对照实验的"调节旋钮":
+//   基线组与实验组的差异由策略真实决策产生, 而不是漏斗概率作弊</code></pre>
+  <div class="kp"><span class="tag">为什么漏斗必须参数化</span><div class="body">M4 的对照实验要证明"RTA 决策质量高于人群包"：两组走<b>同一套漏斗概率</b>，唯一变量是决策逻辑——实验组排除已购用户后，其曝光→点击→转化的样本质量自然变化，报表差异才可归因于决策本身。概率若硬编码，实验就调不了；若两组概率不同，就是作弊。</div></div>
+
+  <h3>执行清单</h3>
+  <table>
+    <tr><th style="width:320px">步骤</th><th>产出</th></tr>
+    <tr><td>1. echo 服务：Spring Boot（或裸 HttpServer）+ HmacSha256 验签 + 协议校验，决策恒 target=true、bidRatio=1.0</td><td>决策 API 可用，签名防伪生效</td></tr>
+    <tr><td>2. 模拟器漏斗引擎：参竞响应 → 按 winRate 模拟胜出 → 曝光事件 → 按 ctr 抽样点击 → 按 cvr 抽样转化，三类事件按协议回传</td><td>回传事件流生成，requestId 贯穿可查</td></tr>
+    <tr><td>3. 账单生成器：日终汇总回传 cost → 账单文件</td><td>模拟账单文件（M3 对账的对手方数据）</td></tr>
+    <tr><td>4. 全链路冒烟：5 分钟 3000 QPS 平峰 → 检查五类记录数量勾稽（曝光 ≥ 点击 ≥ 转化）</td><td>漏斗数量自洽报告</td></tr>
+    <tr><td>5. 延迟基线落盘：每秒一行 JSONL（ts/qps/p50/p99/errRate/timeoutRate）</td><td>baseline-m0.jsonl——M1/M5 对照基线</td></tr>
+  </table>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>全链路闭环：任选一条 requestId，五类记录（请求/响应/曝光/点击或转化/账单归属）可串联追查</li>
+      <li>漏斗勾稽：曝光数 > 点击数 > 转化数，比例符合配置概率（±3% 统计误差内）</li>
+      <li>延迟基线落盘：echo 全链路 P99 记录在案（预期个位数 ms——这是未来 38ms 预言的"地板"）</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>点击数 ≥ 曝光数</td><td>漏斗抽样逻辑写反（先抽点击再判曝光）</td><td>漏斗必须逐级递减校验；加一条断言进冒烟脚本</td></tr>
+    <tr><td>回传事件丢失 requestId 关联</td><td>异步回传时上下文没带上</td><td>回传任务构造时就闭包捕获 requestId——不要在回传时重新生成</td></tr>
+    <tr><td>echo P99 反而波动大</td><td>JIT 未预热 / GC 停顿混入</td><td>复用 M5 纪律（预热丢弃、3 轮取中位）——基线的口径从 M0 就统一</td></tr>
+  </table>
+</section>
+
+<!-- ============ 速览卡1 ============ -->
+<section id="card-glossary">
+  <h2><span class="num">05</span>速览卡 · 广告域 15 名词（口袋版）</h2>
+  <table>
+    <tr><th style="width:150px">名词</th><th>一句话定义</th><th>为什么需要</th></tr>
+    <tr><td>广告主 Advertiser</td><td>决策主体，一方数据持有者</td><td>整个系统替它省钱赚钱</td></tr>
+    <tr><td>计划 Campaign</td><td>预算/策略/人群的独立控制单元</td><td>防超花按此隔离（M2 路由/M3 预算）</td></tr>
+    <tr><td>广告位 AdSlot</td><td>流量发生的位置</td><td>场景化策略的输入</td></tr>
+    <tr><td>出价系数 bidRatio</td><td>对原始出价的动态调节因子</td><td>二值筛选浪费信号强度——1.5 是买确定性的钱</td></tr>
+    <tr><td>日预算 Budget</td><td>计划的钱袋</td><td>超花一分钱都是事故</td></tr>
+    <tr><td>频控 Frequency Cap</td><td>用户×计划的曝光上限</td><td>用户体验与预算效率双约束</td></tr>
+    <tr><td>曝光 Exposure</td><td>漏斗第一层</td><td>漏斗与归因的起点（CPC 计费在点击层）</td></tr>
+    <tr><td>点击 Click</td><td>漏斗第二层</td><td>CPC 花钱的地方（对账口径）</td></tr>
+    <tr><td>转化 Conversion</td><td>漏斗第三层</td><td>归因终点、"已购排除"的特征源</td></tr>
+    <tr><td>归因 Attribution</td><td>转化功劳的分配</td><td>技术优化→业务价值的翻译器</td></tr>
+    <tr><td>人群包 Audience Pack</td><td>离线用户名单（T+1）</td><td>RTA 要取代的方案 = 对照实验基线组</td></tr>
+    <tr><td>实验分桶 Bucket</td><td>AB 分流的最小单元</td><td>同用户同桶 = 决策稳定性 + 归因可比</td></tr>
+    <tr><td>pacing</td><td>预算消耗的时间分配</td><td>防前松后紧（媒体挤兑风险）</td></tr>
+    <tr><td>对账 Reconciliation</td><td>账单 vs 自记消耗比对</td><td>信任的最后一道兜底</td></tr>
+    <tr><td>超时率 Timeout Rate</td><td>超时/请求占比</td><td>生存指标：腾讯 >5% 冻结（红线 1%）</td></tr>
+  </table>
+</section>
+
+<!-- ============ 速览卡2 ============ -->
+<section id="card-assert">
+  <h2><span class="num">06</span>速览卡 · 对手方断言（裁判判罚表）</h2>
+  <table>
+    <tr><th style="width:200px">断言项</th><th>判罚</th><th>后续里程碑归属</th></tr>
+    <tr><td>黑名单用户参竞</td><td>违规</td><td>M2 策略语义</td></tr>
+    <tr><td>响应 &gt; 60ms</td><td>超时（媒体默认策略）</td><td>M1/M5 延迟治理</td></tr>
+    <tr><td>超时率 &gt; 1%</td><td>报告标红（对齐腾讯 5% 红线留边际）</td><td>M5 告警</td></tr>
+    <tr><td>字段缺失/非法</td><td>错误</td><td>全程契约</td></tr>
+    <tr><td>验签失败</td><td>错误 + 401</td><td>全程鉴权</td></tr>
+    <tr><td>（预留）预算耗尽仍参竞</td><td>违规</td><td>M3 接入后启用</td></tr>
+    <tr><td>（预留）频控超限仍参竞</td><td>违规</td><td>M2 频控接入后启用</td></tr>
+  </table>
+  <p>裁判断言随里程碑生长——<b>M0 先有裁判、后有大纲，每个里程碑上线当天就被新的断言盯上</b>，这就是"验收先于实现"。</p>
+</section>
+
+<!-- ============ 速览卡3 ============ -->
+<section id="card-cid">
+  <h2><span class="num">07</span>速览卡 · requestId 贯穿（全系统主键）</h2>
+  <table>
+    <tr><th style="width:170px">要点</th><th>内容</th></tr>
+    <tr><td>是什么</td><td>每次决策请求的 UUID，被响应、曝光、点击、转化、账单明细五类记录共同携带</td></tr>
+    <tr><td>为什么关键</td><td>三条链路的共同钥匙：归因（M4 末次点击：转化事件反查 requestId → 找到决策）、幂等（M3 对账桶③：重复回传按同 ID 去重）、对账（M3：自记消耗与账单明细按 ID 级比对）</td></tr>
+    <tr><td>业界实证</td><td>华为 RTA 接口的 transUniqueId 字段——"关联 id，用于与点击回传进行关联"，同一设计思想</td></tr>
+    <tr><td>实现纪律</td><td>回传事件构造时闭包捕获，禁止重新生成；全局禁止把 requestId 当业务主键以外用途（如排序依据）</td></tr>
+    <tr><td>面试话术</td><td>"我的归因、幂等、对账三条链路共用一个贯穿 ID——设计协议时我把它当宪法第一条"</td></tr>
+  </table>
+</section>
+
+<!-- ============ 动态雷达 ============ -->
+<section id="radar">
+  <h2><span class="num">08</span>动态雷达 · 2026（M0 相关）</h2>
+
+  <div class="radar-item"><span class="date">2026-07-22</span><b>实证：华为鲸鸿动能 RTA 接口文档（公开）</b>——真实媒体侧 RTA 协议字段全表：HmacSha256(requestId+requestTime+oaid) 鉴权、priceWeight 出价比例、expId 实验 ID 透传、transUniqueId 点击回传关联、oaid 脱敏传输。<span class="impact">对项目的影响：本册协议字段与鉴权设计的直接依据——协议不是想象的，是对齐真实接口的。</span></div>
+
+  <div class="radar-item"><span class="date">2025-11-07</span><b>实证：腾讯营销 RTA&ADX 对接指引</b>——准入门槛（RTA 日均消耗 10 万）、质量清退标准（超时率/错误率 >5% 警告 7 天未解决 → 冻结请求）、标准套餐 QPS 上限 30 万。<span class="impact">对项目的影响：断言清单的红线值有了业务出处；"超时是生存指标"从口号变成合同条款。</span></div>
+
+  <div class="radar-item"><span class="date">2026</span><b>方案：广告平台之 RTA 系统设计（头条/火山）</b>——低延迟分层预算（网关 ≤50ms、引擎 ≤30ms）、全链路内存化、请求合并、监控口径（P50≤10ms / P99≤30ms / 错误率 ≤0.1% / 超时率 ≤0.01%）。<span class="impact">对项目的影响：02 节延迟预算分解的对照系——我们的 50ms P99 目标在业界口径的"宽松档"，预期管理有依据。</span></div>
+
+  <div class="radar-item"><span class="date">2026-08-21</span><b>学术：快手 ACQ 论文（arXiv 2412.06167v2）</b>——广告账户五层层级结构实证（advertiser → account → campaign → unit → creative），投放管理的最小控制单元是 campaign。<span class="impact">对项目的影响：任务1 层级裁剪的依据——裁掉 unit/creative 管理层，保留 campaign 为预算/策略控制单元。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-13</span><b>投放侧：百度广告账户搭建顺序（实践文章）</b>——"结构定边界、预算定空间、定向定范围、出价定节奏"；预算只能按计划分配；已转化人群重复投放是纯浪费。<span class="impact">对项目的影响：业务初心的投放侧印证——AdKernel 的价值主张（已购排除/差异化出价）与一线投放痛点逐字吻合。</span></div>
+
+  <div class="radar-item"><span class="date">2026-07-15</span><b>实证：华为鲸鸿动能账户结构文档</b>——计划/任务/创意三层管理、日预算控制、计费方式 CPC/CPM/CPA/oCPC。<span class="impact">对项目的影响：漏斗计费口径（CPC 花在点击层）与日预算概念的行业定义。</span></div>
+</section>
+
+<!-- ============ DoD ============ -->
+<section id="dod">
+  <h2><span class="num">09</span>M0 验收清单（DoD）</h2>
+  <p>逐项打勾（自动保存）。M0 全绿 = 数据骨架闭环成立，M1 可以开工。</p>
+  <ul class="dod" id="dod-list">
+    <li><input type="checkbox" id="k01"><label for="k01">docs/domain.md：15 名词三段俱全（定义/为什么需要/挂哪层），层级图一页，术语与业界对齐</label></li>
+    <li><input type="checkbox" id="k02"><label for="k02">三份协议成文（docs/protocol/），样例 JSON 齐全，expId 闭环设计锁定</label></li>
+    <li><input type="checkbox" id="k03"><label for="k03">requestId 五类记录贯穿可查：抽一条 requestId 能串起全部关联记录</label></li>
+    <li><input type="checkbox" id="k04"><label for="k04">HmacSha256 鉴权生效：篡改签名或过期时间戳 → 401</label></li>
+    <li><input type="checkbox" id="k05"><label for="k05">模拟器 1 万+ QPS 稳定 5 分钟（洪峰 1.5 万），裁判报告含延迟分布</label></li>
+    <li><input type="checkbox" id="k06"><label for="k06">流量分布验证：Top20% 用户承载 ≈80% 流量（幂律）</label></li>
+    <li><input type="checkbox" id="k07"><label for="k07">断言生效实证：故意让 echo 返回黑名单参竞 → 裁判记违规</label></li>
+    <li><input type="checkbox" id="k08"><label for="k08">漏斗勾稽自洽：曝光 > 点击 > 转化，比例符合配置（±3%）</label></li>
+    <li><input type="checkbox" id="k09"><label for="k09">模拟账单文件生成（T+1 汇总 cost），与回传事件可对上</label></li>
+    <li><input type="checkbox" id="k10"><label for="k10">延迟基线 JSONL 落盘（baseline-m0.jsonl），口径与 M5 纪律一致（预热/3 轮）</label></li>
+  </ul>
+</section>
+
+<!-- ============ 参考 ============ -->
+<section id="refs">
+  <h2><span class="num">10</span>参考来源</h2>
+  <ul>
+    <li><a class="ext" href="https://developer.huawei.com/consumer/cn/doc/promotion/ads_rta04-0000001474730924" target="_blank">鲸鸿动能 RTA 接口说明（华为开发者文档，2026-07 更新）</a></li>
+    <li><a class="ext" href="https://support.e.qq.com/detail?cid=5055&pid=12615" target="_blank">腾讯营销 RTA&ADX 对接指引与要求（2025-11 更新）</a></li>
+    <li><a class="ext" href="http://m.toutiao.com/group/7622131088114074127/?upstream_biz=VolcEngine" target="_blank">广告平台之 RTA 系统设计（2026）</a></li>
+    <li><a class="ext" href="https://arxiv.org/pdf/2412.06167v2" target="_blank">ACQ: A Deployed Two-Stage Framework for Automated Creative Quota Allocation（快手，arXiv 2412.06167v2，2026-08）</a></li>
+    <li><a class="ext" href="https://m.sohu.com/a/1087009001_121052912/" target="_blank">百度广告账户搭建顺序：预算、定向与出价（2026-10）</a></li>
+    <li><a class="ext" href="https://developer.huawei.com/consumer/cn/doc/promotion/overview-cjjjgg-0000001182873508" target="_blank">鲸鸿动能竞价广告概述：计划/任务/创意三层管理（华为开发者文档，2026-07）</a></li>
+  </ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+  // DoD 勾选持久化
+  const KEY = 'adkernel-m0-dod-v1';
+  const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+  const boxes = Array.from(document.querySelectorAll('.dod input[type=checkbox]'));
+  boxes.forEach(b => {
+    b.checked = !!saved[b.id];
+    b.closest('li').classList.toggle('done', b.checked);
+    b.addEventListener('change', () => {
+      saved[b.id] = b.checked;
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      b.closest('li').classList.toggle('done', b.checked);
+    });
+  });
+
+  // 滚动高亮
+  const links = Array.from(document.querySelectorAll('nav.sidebar a[href^="#"]'));
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const idx = sections.indexOf(e.target);
+        if (idx >= 0) links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(s => s && observer.observe(s));
+</script>
+</body>
+</html>

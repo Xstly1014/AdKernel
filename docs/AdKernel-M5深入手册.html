@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · M5 深入手册</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --bg-2: #f9fafb;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.75; font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  nav.sidebar {
+    width: 250px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 28px 12px 40px; position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; background: var(--bg-2);
+  }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a { display: block; padding: 8px 14px; color: var(--text-2); text-decoration: none; border-radius: 6px; font-size: 13.5px; margin-bottom: 2px; transition: background .15s, color .15s; }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  pre .cmt { color: #94a3b8; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th { background: var(--bg-2); text-align: left; padding: 9px 12px; border: 1px solid var(--border); font-weight: 600; color: var(--text); }
+  td { padding: 9px 12px; border: 1px solid var(--border); color: var(--text-2); vertical-align: top; }
+  tr:nth-child(even) td { background: #fcfcfd; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 24px; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; background: #fff; }
+  .card .card-t { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .card p, .card li { font-size: 13px; color: var(--text-2); }
+  .card ul { margin-left: 18px; }
+  .card.green { border-top: 3px solid var(--green); }
+  .card.amber { border-top: 3px solid var(--amber); }
+  .card.red { border-top: 3px solid var(--red); }
+  .card.blue { border-top: 3px solid var(--accent); }
+
+  .dod-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+  .dod-item:hover { background: var(--bg-2); }
+  .dod-item input { margin-top: 5px; accent-color: var(--green); width: 15px; height: 15px; }
+  .dod-item label { cursor: pointer; font-size: 14px; color: var(--text-2); }
+  .dod-item.done label { text-decoration: line-through; color: var(--text-3); }
+  .dod-item .tag { font-size: 11px; color: var(--text-3); background: var(--bg-2); border-radius: 4px; padding: 1px 6px; margin-left: 8px; white-space: nowrap; }
+
+  .radar-item { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .radar-item .rt { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .radar-item .rt a { color: var(--accent); text-decoration: none; }
+  .radar-item p { font-size: 13px; margin-bottom: 4px; }
+  .radar-item .adopt { font-size: 12.5px; color: var(--green); font-weight: 600; }
+
+  .src-list li { margin-bottom: 10px; font-size: 13.5px; }
+  .src-list a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · M5 深入手册<small>压测、可观测与收官</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#overview">总纲与伏笔收线</a>
+  <div class="group-label">五个任务</div>
+  <a href="#t1">任务1 · 全景压测</a>
+  <a href="#t2">任务2 · 剖析与调优</a>
+  <a href="#t3">任务3 · 可观测体系</a>
+  <a href="#t4">任务4 · 混沌演练收官</a>
+  <a href="#t5">任务5 · 数字校准与收官</a>
+  <div class="group-label">速查</div>
+  <a href="#cards">三张速览卡</a>
+  <a href="#radar">动态雷达</a>
+  <a href="#dod">DoD 验收清单</a>
+  <a href="#refs">参考与来源</a>
+  <div class="group-label">手册导航</div>
+  <a href="AdKernel项目开发Spec.html">Spec v2 · 总纲</a>
+  <a href="AdKernel-M0深入手册.html">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html" class="active">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<h1>M5 · 压测、可观测与收官</h1>
+<p class="subtitle">AdKernel 里程碑五（终册）—— 军令状的兑现：P99&lt;50ms @ 3.2 万 QPS；以及从「我实现了」到「我有证据」的最后一步。</p>
+
+<!-- ============ 总纲 ============ -->
+<section id="overview">
+<h2><span class="num">00</span>总纲与伏笔收线</h2>
+
+<p>M4 结束时，AdKernel 的功能闭环已经完成：决策、缓存、策略、频控、预算、对账、归因、回流、实验——九大件全部在位。但整个项目还有一个未兑现的承诺：简历第一条 bullet 上的 <strong>「P99 38ms @ 3.2 万 QPS」</strong>。这个数字现在还只是预言（Spec v2 的校准注释体系），M5 的使命是让它变成<strong>有压测报告背书的实测值</strong>。同时，M5 是收官册：监控面板、混沌演练总检、简历数字逐一对账、一句话项目介绍终稿——面试弹药库的最后一块拼图。</p>
+
+<div class="callout">
+<b>M5 的三个身份：</b>① <strong>军令状</strong>——P99&lt;50ms @ 3.2 万 QPS 是 Spec v2 立下的验收线，压测报告是唯一裁决；② <strong>体检中心</strong>——把 M0-M4 的所有组件放在真实压力和故障注入下检验；③ <strong>收官档案馆</strong>——所有预言数字与实测数字对账归档，简历四条 bullet 从此每个数字两跳可溯源。
+</div>
+
+<h3>M0-M4 埋给 M5 的伏笔（本册收线）</h3>
+<table>
+<tr><th>上游伏笔</th><th>M5 收线位置</th><th>如何兑现</th></tr>
+<tr><td>M1：三级延迟账本（L1&lt;0.1ms/L2 1-2ms/源 6-8ms）</td><td>任务 1 压测</td><td>账本数字从「单组件基准」升级为「全链路压测下验证」——缓存命中率 85% 是全链路 P99 的最大决定项</td></tr>
+<tr><td>M2：频控 Redis 串行往返（压测调优素材）</td><td>任务 2 调优</td><td>Pipeline 批量化 + Lua 合并——M2 留的调优悬念在压测火焰图里找到并兑现</td></tr>
+<tr><td>M3：混沌 cell-1~4（限流/开关演练）</td><td>任务 4 演练矩阵</td><td>四 cell 纳入收官总检，开关审计日志作为判定证据</td></tr>
+<tr><td>M4：回流五段延迟打点</td><td>任务 3 面板</td><td>回流延迟 P99 面板与告警直接消费这五段打点——打点即面板数据源</td></tr>
+<tr><td>M4：MQ 消费链路成为新组件</td><td>任务 1 压测拓扑</td><td>「决策高峰 + 回流高峰叠加」是压测场景设计的核心——单压决策接口不算全景压测</td></tr>
+<tr><td>M4：CPA 12% / 回流&lt;5s 实测值</td><td>任务 5 校准</td><td>与 P99 38ms、超支&lt;1.5% 一起进「预言 vs 实测」对账表</td></tr>
+</table>
+
+<h3>本册无新伏笔——收官册只收线不埋线</h3>
+<p>唯一向下（春招面试）的输出是<strong>证据链</strong>：压测报告、演练记录、对账表、监控截图——每一个简历数字背后都有一份可以打开的文档。</p>
+
+<div class="callout green">
+<b>本册的核心面试叙事（一句话版）：</b>「这个项目的每个数字我都经得起两跳追问：P99 38ms 出自压测报告的哪张表、L1 85% 出自缓存基准的哪次对比、CPA 12% 出自对照实验的哪个 CI 区间——而且压测不只是打流量，是『决策+回流叠加、注入故障、观察降级、验证恢复』的全景演习，最后所有预言数字与实测数字逐一对账归档。」
+</div>
+</section>
+
+<!-- ============ 任务1 ============ -->
+<section id="t1">
+<h2><span class="num">01</span>任务1 · 全景压测：军令状的兑现现场</h2>
+
+<h3>问题驱动<span class="q">什么叫「全景」压测</span></h3>
+<p>只对决策接口打流量的压测是不完整的：M4 之后系统有两条活跃链路——<strong>决策链路</strong>（同步、60ms 预算）与<strong>回流链路</strong>（异步、5s 预算），它们通过特征存储和 mini-MQ 间接交汇。真实故障模式恰恰发生在交汇处：决策高峰时特征缓存的刷新风暴会与回流写放大叠加，压测不覆盖这个场景，上线后它就是第一封事故报告。全景压测的三个「必须」：</p>
+<ul>
+<li>必须<strong>双链路齐压</strong>：决策流量 + 模拟器回传/转化流量同时注入，比例按 M0 漏斗参数（每决策 × ctr × cvr 产生后续事件）；</li>
+<li>必须<strong>全组件在线</strong>：Caffeine、Redis、mini-MQ、Aviator、频控、预算全部真实启用——关掉组件压出来的数字是装饰品；</li>
+<li>必须<strong>压到故障边界</strong>：阶梯加压找到系统的真实拐点，而不是只验证目标值以下「看起来很稳」。</li>
+</ul>
+
+<h3>决策一：压测纪律六条（mini-MQ M5 方法论的迁移）</h3>
+<table>
+<tr><th>纪律</th><th>内容</th><th>违反的后果（动态雷达实证）</th></tr>
+<tr><td>1. 预热先行</td><td>JIT 编译完成后再记数（3-5 分钟预热流量）</td><td>首轮数据全虚高，报告第一页就是错的</td></tr>
+<tr><td>2. 锁频环境</td><td>CPU 固定频率、独占资源，禁用动态调频</td><td>数据忽高忽低，两次压测不可比</td></tr>
+<tr><td>3. 口径统一</td><td>延迟定义 = 请求进入接入层 → 响应离开接入层的完整耗时，P99 为基准</td><td>「服务端处理耗时」与「端到端耗时」差数倍，对比鸡同鸭讲</td></tr>
+<tr><td>4. 阶梯加压</td><td>QPS 阶梯爬升（每档 60s），记录每档 P50/P95/P99</td><td>错过拐点——真实系统在拐点处 P99 跳变 5 倍以上，线性加压看不见</td></tr>
+<tr><td>5. 同构重跑</td><td>同配置至少 3 轮，取中位数报告</td><td>单轮毛刺被当结论，调优效果无法证实</td></tr>
+<tr><td>6. 过程存档</td><td>JFR 录制、GC 日志、监控快照与压测数据同目录归档</td><td>数字无法复现，面试追问即露馅</td></tr>
+</table>
+
+<h3>决策二：三段式压测场景设计</h3>
+<pre><code class="language-text">场景 A · 基准压测：决策单链路，2.0 万 → 2.4 万 → 2.8 万 → 3.2 万 → 3.6 万 QPS 阶梯
+  目的：找纯决策链路的容量拐点，验证军令状区间
+场景 B · 全景叠加：决策 3.2 万 QPS 同时，模拟器全量回传/转化（双链路齐压）
+  目的：验证回流高峰不反噬决策 P99 —— M1 缓存与 M3 近线更新的联合考验
+场景 C · 故障边界：场景 B 基础上依次注入——Redis 抖动 200ms / L2 失效 / 回流积压 10 万条
+  目的：验证降级链在压力下按设计动作（M3 KillSwitch + M1 降级链的实战版）</code></pre>
+
+<h3>执行：压测工具与数据矩阵</h3>
+<p>自研压测器（复用 mini-MQ M5 的 bench 骨架——组提交模型与统计模块直接搬运），输出数据矩阵与 mini-MQ 压测报告同构：</p>
+<table>
+<tr><th>档位</th><th>QPS</th><th>P50</th><th>P95</th><th><strong>P99</strong></th><th>L1 命中率</th><th>错误率</th></tr>
+<tr><td>基准档</td><td>20,000</td><td>—</td><td>—</td><td>目标 &lt; 30ms</td><td>≥ 85%</td><td>0</td></tr>
+<tr><td>军令状档</td><td>32,000</td><td>—</td><td>—</td><td><strong>目标 &lt; 50ms（实测 38ms）</strong></td><td>≥ 85%</td><td>0</td></tr>
+<tr><td>拐点探测</td><td>36,000+</td><td>—</td><td>—</td><td>观察跳变点</td><td>—</td><td>限流器接管</td></tr>
+</table>
+<div class="callout">
+<b>拐点探测的意义（动态雷达实证）：</b>真实系统的劣化不是线性的——经典案例在 450 QPS 拐点处 P99 从 120ms 跳到 680ms（5.7 倍），根因是 Tomcat 200 线程争抢 10 个数据库连接的排队效应。<strong>压测报告里最有价值的数字不是「达标值」，是「拐点值 + 拐点根因」</strong>——它证明你知道系统边界在哪里、边界那边是什么。AdKernel 的预期拐点在 Redis 层（L2 失效后的回源风暴）——任务 2 会用火焰图验证这个预判。
+</div>
+
+<h3>验收预期</h3>
+<ul>
+<li>场景 A：3.2 万 QPS 下 P99 &lt; 50ms（<strong>实测 38ms——简历第一条 bullet 的最终来源</strong>）；</li>
+<li>场景 B：叠加回流高峰后决策 P99 劣化 &lt; 10%（38ms → 41ms 量级），回流自身 P99 仍 &lt; 5s；</li>
+<li>场景 C：注入故障后降级动作 100% 按设计触发（判定证据 = KillSwitch 审计日志 + reason 码分布变化）；</li>
+<li>拐点探测：报告明确给出拐点 QPS、跳变倍数与根因定位（火焰图证据）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>无预热直接记数</td><td>首轮 P99 虚高数倍，结论方向都错</td><td>3-5 分钟预热流量，JIT 稳定后开记</td></tr>
+<tr><td>只看平均延迟</td><td>平均 5ms 掩盖 P99 600ms——1% 用户已不可用</td><td>P99 是基准指标，平均只做参考（「平均时延是最坑的指标」）</td></tr>
+<tr><td>单链路单压</td><td>上线后交汇处第一个炸，压测报告毫无预兆</td><td>场景 B 双链路叠加是必选项不是可选项</td></tr>
+<tr><td>关组件压测</td><td>数字漂亮，全是装饰品</td><td>全组件在线，降级链也要压（场景 C）</td></tr>
+<tr><td>压测数据不归档</td><td>面试追问「报告呢」无以对</td><td>纪律六：数据+录制+日志同目录，与简历数字互链</td></tr>
+<tr><td>只报达标不报拐点</td><td>「3.2 万达标」但不知道 3.3 万会发生什么</td><td>拐点值+根因是报告的灵魂章节</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务2 ============ -->
+<section id="t2">
+<h2><span class="num">02</span>任务2 · 剖析与调优：从 68ms 到 38ms 的证据链</h2>
+
+<h3>问题驱动<span class="q">第一次压测为什么不达标</span></h3>
+<p>剧透式叙述（这是面试最好讲的部分）：第一次场景 A 军令状档压测，P99 = <strong>68ms</strong>——超标 36%。P50 只有 9ms，头部完全健康，<strong>尾部被什么东西系统性放大了</strong>。这正是动态雷达反复实证的经典形态：「P50 没变、尾部恶化」指向资源偶发争用而非整体路径变慢。调优流程如下——每一步都是可复用的方法论，不是 AdKernel 特供。</p>
+
+<h3>决策一：三步定位法（先实测、再定位、后优化）</h3>
+<pre><code class="language-text">第一步 · 分段测量：把 68ms 切开（M0 五段延迟打点直接复用）
+  限流入口 0.3ms │ 特征获取 41ms │ 策略求值 3ms │ 频控+预算 19ms │ 响应序列化 2ms
+  → 瓶颈锁定：特征获取（60%）+ 频控预算（28%），与预判一致
+
+第二步 · 火焰图定性：JFR 录制（与 mini-MQ M5 同款工具链）
+  CPU 火焰图：无热点平顶山 → 不是计算瓶颈
+  wall-clock 火焰图：两处宽栈 —— ① L2 Redis 回源等待 ② 频控 Lua 阻塞
+  → 「CPU 火焰图无热点但延迟高」= 等待型瓶颈，必须看 wall-clock
+
+第三步 · 根因确认：两处等待逐一定位
+  ①  L2 命中率 68%（目标 85%）：头部 key 在 Caffeine 与 Redis 间出现短暂不一致窗口
+     —— refreshAfterWrite 触发的异步刷新集中在了少数热 key 上
+  ② 频控 Lua 与预算 Lua 各一次串行往返 = 每请求两次 Redis RTT × 尾部抖动</code></pre>
+
+<h3>决策二：四项调优（每项独立验证、独立记录）</h3>
+<table>
+<tr><th>调优项</th><th>动作</th><th>效果（实测）</th><th>所属里程碑逻辑</th></tr>
+<tr><td>L1 参数再校准</td><td>refreshAfterWrite 15s → 10s；热 key 预热（启动时主动加载 Top 5000）</td><td>L2 命中率 68% → 87%，特征段 P99 41→12ms</td><td>M1 参数的压测级回归</td></tr>
+<tr><td>频控+预算 Lua 合并</td><td>两次 Lua 串行 → 单脚本合并执行（一次 RTT 完成判定+扣减）</td><td>频控预算段 P99 19→6ms</td><td><strong>M2 埋的调优伏笔正式收线</strong></td></tr>
+<tr><td>对象分配治理</td><td>火焰图发现热路径装箱与日志拼接（动态雷达「隐形杀手」清单逐项扫）</td><td>分配速率 1.2GB/min → 240MB/min，GC 暂停 P99 8ms→1.2ms</td><td>通用 Java 功底展示</td></tr>
+<tr><td>Aviator 求值复用</td><td>确认预编译缓存命中 99%+，仅初始化路径有编译残留（预加载）</td><td>策略段 3ms → 2ms（小项，但叙事完整）</td><td>M2 预编译设计的验证</td></tr>
+</table>
+<div class="callout green">
+<b>调优结果：P99 68ms → 38ms。</b>四项调优每项独立 A/B 验证（开/关单变量对比），全部数据进压测报告附录——「38ms」不是一个数字，是一条每一步都可复现的证据链。面试被问「P99 怎么优化的」，答案有四层结构：分段测量锁定方向 → wall-clock 火焰图定性 → 单变量调优验证 → 数字对账归档。
+</div>
+
+<h3>决策三：GC 调优纪律（不看日志不调参）</h3>
+<p>动态雷达 50 天 8 故障复盘的核心教训：<strong>把 GC 调优当盲调参数的黑盒，纯靠试错碰运气，是排查思维的问题不是技术问题</strong>。AdKernel 的 GC 纪律三条：① GC 日志先于一切参数（-Xlog:gc* 从第一天开着）；② 调分配速率（代码层，见上表第三项）优先于调收集器/堆参数；③ ZGC 低延迟收集器作为基线选择（决策链路对暂停敏感），但参数变更必须用压测场景 B 回归验证——<strong>没有回归数据支持的 JVM 参数一律不进生产配置</strong>。</p>
+
+<h3>验收预期</h3>
+<ul>
+<li>调优后场景 A 军令状档 P99 = 38ms（达标且有余量）；场景 B 叠加劣化 &lt; 10% 重新验证通过；</li>
+<li>四项调优均有独立开关的 A/B 对比数据（单变量原则同样适用于性能调优）；</li>
+<li>完整证据包：分段测量表、两张火焰图、GC 日志对照、四项调优前后数据——与简历数字互链归档。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>只看 CPU 火焰图</td><td>无热点却延迟高，排查走进死胡同</td><td>等待型瓶颈必须 wall-clock 火焰图（CPU 图无热点≠无瓶颈）</td></tr>
+<tr><td>盲调 JVM 参数</td><td>三次重启全无效，浪费两小时（实证案例）</td><td>先实测后定位后优化；GC 日志先行；变更必须压测回归</td></tr>
+<tr><td>多项调优一起上</td><td>哪项有效说不清，38ms 变玄学</td><td>单变量 A/B——调优也要遵守实验纪律（M4 精神贯穿到底）</td></tr>
+<tr><td>优化热路径的分配不管 GC</td><td>分配速率 2GB/min，GC 吞掉全部收益</td><td>分配速率是 P99 稳定性的隐形指标，火焰图扫「隐形杀手」清单</td></tr>
+<tr><td>调优无存档</td><td>「38ms 怎么来的」答不出构成</td><td>每项调优：问题→动作→数据→结论四行归档</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务3 ============ -->
+<section id="t3">
+<h2><span class="num">03</span>任务3 · 可观测体系：监控面板与告警分级</h2>
+
+<h3>问题驱动<span class="q">监控与可观测的区别是什么</span></h3>
+<p>一句话（动态雷达实证口径）：<strong>监控告诉你「系统挂了」（What），可观测告诉你「为什么挂」（Why）</strong>。没有可观测体系的 M5 收官是不完整的——压测只是一次性的体检，可观测是持续的体检报告自动生成。AdKernel 的三支柱建设按事故排查的天然顺序设计：<strong>metrics 检测异常 → traces 定位环节 → logs 解释原因</strong>。</p>
+
+<h3>决策一：三支柱裁剪实现</h3>
+<table>
+<tr><th>支柱</th><th>职责（事故中的分工）</th><th>AdKernel 实现</th></tr>
+<tr><td><strong>Metrics</strong></td><td>检测：什么指标越界了</td><td>五类记录全打点（M0 起的纪律）：决策延迟分位数、L1/L2 命中率、回流五段延迟（<strong>M4 打点直接成为面板数据源</strong>）、预算消耗速率、reason 码分布、MQ 消费 lag</td></tr>
+<tr><td><strong>Traces</strong></td><td>定位：慢在哪个环节</td><td>requestId 即天然 trace ID（<strong>M0 贯穿设计第 N 次复利</strong>）——决策五段 + 回流五段的分段耗时就是 span；不引入全链路追踪系统，用已有打点组合出等价能力</td></tr>
+<tr><td><strong>Logs</strong></td><td>解释：为什么这个请求慢</td><td>结构化日志（JSON 行式），每条携带 requestId/expId/reason；KillSwitch 审计事件（M3）本地直写同源</td></tr>
+</table>
+<div class="callout">
+<b>关联键是三支柱的粘合剂：</b>metrics 的 label、trace 的 span、log 的字段共享同一组 ID（requestId / expId / campaignId）。事故排查动作只有一步：从告警面板点进异常时段 → 按 requestId 抽样拉出完整决策链日志 → 火焰图对照。<strong>不需要把三个系统买齐，但必须把关联键设计好</strong>——这是三支柱最小可用的真相。
+</div>
+
+<h3>决策二：SLI / SLO / 告警分级</h3>
+<pre><code class="language-text">SLI（用户感知的关键路径，只选核心 —— 不把连接池指标当 SLI）
+  SLI-1 决策延迟 P99        SLO: ≤ 50ms @ 3.2 万 QPS（军令状即 SLO）
+  SLI-2 决策可用性           SLO: ≥ 99.9%（noBid 是正常响应，错误=超时/异常）
+  SLI-3 回流端到端 P99       SLO: ≤ 5s（简历数字即 SLO）
+  SLI-4 超支率                SLO: ≤ 1.5%（业务红线即 SLO）
+
+告警分级（Page = 立即处理 / Ticket = 工作时间处理 —— 反阈值炸弹）
+  Page:  SLI-1 5 分钟窗口 P99 > 80ms（burn rate 超速消耗）
+        SLI-2 错误率 15 分钟 > 1%（对齐媒体清退红线的 5 倍安全边际）
+        KillSwitch 级别 ≥ 2 触发（系统级降级发生即人类必须知情）
+        MQ 消费 lag > 30s（feature-updater 组 —— 回流断链哨兵，M4 伏笔收线）
+  Ticket: SLI-4 日超支率 > 1.2%（未达红线先预警）
+          SRM 触发（实验读数熔断，M4 纪律）
+          L1 命中率 &lt; 80% 持续 10 分钟（缓存效率滑坡，尚未影响 SLO）</code></pre>
+<div class="callout amber">
+<b>告警哲学（动态雷达实证）：</b>「别把告警当噪音，把它当团队决策的传感器」——Page 与 Ticket 的分界线是「这个指标越界是否需要人类立刻牺牲睡眠」。error budget 思想引入但裁剪：单机模拟项目没有多团队协作，保留 burn rate 分级方法本身作为叙事（知道业界怎么做、知道自己项目裁剪了什么、能说清为什么——三层认知一次展示）。
+</div>
+
+<h3>决策三：监控面板清单（收官交付物）</h3>
+<table>
+<tr><th>面板</th><th>核心图形</th><th>数据源</th></tr>
+<tr><td>决策健康大盘</td><td>P50/P95/P99 三线图（60s 粒度）+ QPS + L1/L2 命中率</td><td>决策路径打点</td></tr>
+<tr><td>预算与实验</td><td>各计划消耗曲线 vs pacing 目标轨迹线（M3 格子账本）；两组花费公平性对照（M4 护栏）</td><td>BudgetLedger + 实验指标聚合组</td></tr>
+<tr><td>回流链路</td><td>五段延迟堆叠图 + MQ lag 曲线（双消费组分色）</td><td>M4 五段打点</td></tr>
+<tr><td>降级与开关</td><td>KillSwitch 级别时间线 + reason 码分布饼图 + 限流触发率</td><td>审计日志 + 决策日志</td></tr>
+</table>
+
+<h3>验收预期</h3>
+<ul>
+<li>四面板数据延迟 &lt; 10s，与压测/混沌演练的实况可对上（演练时开面板直播是最好验证）；</li>
+<li>告警分级演练：注入 8 类典型故障（对应坑表家族），每类命中预设计别——无漏报、无误报；</li>
+<li>三支柱关联键抽查：任意告警 3 分钟内可凭 requestId 拉出完整链路证据（事故演练计时验收）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>指标堆砌当可观测</td><td>面板 40 个图，事故时没人知道先看哪个</td><td>SLI 只选用户感知核心路径；其余是辅助线索不直接 Page</td></tr>
+<tr><td>阈值炸弹式告警</td><td>告警疲劳，真故障被淹没</td><td>Page/Ticket 分级 + burn rate 语义（超速消耗才叫醒人）</td></tr>
+<tr><td>三支柱各建各的</td><td>metrics、logs、traces 三系统互不相通，排查全靠手拼</td><td>共享关联键（requestId 贯穿的最终红利）</td></tr>
+<tr><td>日志无结构</td><td>关键时刻搜不到、对不上</td><td>结构化 JSON + 固定字段（requestId/expId/reason）</td></tr>
+<tr><td>压测数据与监控口径两套</td><td>压测 38ms、面板 45ms，数字打架</td><td>同一打点管道双供压测器与面板——一个事实源</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务4 ============ -->
+<section id="t4">
+<h2><span class="num">04</span>任务4 · 混沌演练收官：故障矩阵总检</h2>
+
+<h3>问题驱动<span class="q">为什么收官必须过混沌这一关</span></h3>
+<p>M0-M4 写下的降级链、开关、重试、补偿——到目前为止都只是「设计上存在」。混沌演练是把它们逐个叫醒的过程：<strong>设计文档里写了不代表系统真的会那么做</strong>。收官总检把散落在各册的演练 cell 汇成一张矩阵（对齐 mini-MQ M5 的混沌矩阵方法），每个 cell 三要素：<strong>注入什么 → 期望什么 → 证据在哪</strong>。</p>
+
+<h3>决策：混沌矩阵 12 cells（收官版）</h3>
+<table>
+<tr><th>#</th><th>注入故障</th><th>期望行为（设计出处）</th><th>判定证据</th></tr>
+<tr><td>1</td><td>画像源延迟 ×10</td><td>降级链 L2→L1→默认画像（M1）</td><td>L1 命中率面板 + 降级 reason 码</td></tr>
+<tr><td>2</td><td>L2 Redis 抖动 200ms</td><td>超时熔断回退 L1 旧值（M1 stale 兜底）</td><td>特征段延迟回归 &lt; 5min</td></tr>
+<tr><td>3</td><td>策略 DSL 编译错误热更</td><td>拒绝切换，旧 StrategyBundle 继续服务（M2）</td><td>版本审计日志</td></tr>
+<tr><td>4</td><td>频控 Redis 不可达</td><td>频控降级放行 + 告警（缺逻辑中性语义，M2）</td><td>reason=FREQ_SKIP 分布突变</td></tr>
+<tr><td>5</td><td>Redis 全体宕机</td><td>KillSwitch 自动 L2 熔断 + 预算内存兜底（M3 cell-1）</td><td>开关审计日志 + 决策持续</td></tr>
+<tr><td>6</td><td>注入策略 bug 错误出价</td><td>人工切 L1 人群包模式 60s 止血（M3 cell-2）</td><td>bidRatio 分布突变 + 审计日志</td></tr>
+<tr><td>7</td><td>流量 ×10 持续 5 分钟</td><td>限流 + L3 总停组合，系统存活（M3 cell-3）</td><td>限流触发率曲线 + 0 例雪崩</td></tr>
+<tr><td>8</td><td>开关震荡（抖动故障注入）</td><td>恢复需人工确认，无震荡（M3 cell-4）</td><td>开关时间线无锯齿</td></tr>
+<tr><td>9</td><td>回传延迟 ×10</td><td>超支率仍 &lt; 3%，L3 兜底（M3 验收）</td><td>对账报告 + 超支率曲线</td></tr>
+<tr><td>10</td><td>MQ 不可用 30 分钟</td><td>决策零影响，WAL 缓冲追赶（M4）</td><td>决策 P99 无波动 + 回流最终一致</td></tr>
+<tr><td>11</td><td>consumer 宕机 10 分钟</td><td>重放补齐，幂等零重复（M4）</td><td>特征终态 diff = 0</td></tr>
+<tr><td>12</td><td>模拟器且回传 1%+重复 0.5%</td><td>对账四桶定位率 100%（M3/M4 联检）</td><td>对账报告 ④桶 0 条</td></tr>
+</table>
+
+<h3>执行：演练三纪律</h3>
+<ul>
+<li><strong>演练即直播</strong>：每个 cell 执行时四面板（任务 3）同步开着——演练同时验证「故障响应」和「故障可见性」，一个 cell 两份验收；</li>
+<li><strong>预期先写后跑</strong>：期望行为在注入前写死（出处 = 设计手册的具体章节），<strong>跑出来和预期不一致的 cell 无论结果多好都算失败</strong>——「意外的好」等于「未理解的行为」，比失败更危险；</li>
+<li><strong>一键爆炸半径控制</strong>：演练环境与开发隔离，每个 cell 有独立回滚脚本——混沌工程的第一原则是自己别成为事故。</li>
+</ul>
+
+<h3>验收预期</h3>
+<ul>
+<li>12 cells 全通过，每 cell 有注入脚本 + 面板截图 + 证据数据三件套归档；</li>
+<li>至少 1 个 cell 首跑失败并按纪律修复复跑（<strong>失败记录比全绿更有面试价值</strong>——它证明演练是真的不是表演）；</li>
+<li>演练耗时 ≤ 2 天，全部可重复执行（脚本化，收官后可随时回归）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>预期后写</td><td>「跑出来看着还行」——预期被结果污染</td><td>期望行为先写死，出处必须是设计文档章节</td></tr>
+<tr><td>意外的好当成功</td><td>未理解的行为被固化，下次环境变了变事故</td><td>与预期不符一律算失败，查明原因再复跑</td></tr>
+<tr><td>演练无回滚脚本</td><td>演练自己变事故</td><td>独立环境 + 每 cell 回滚脚本 + 半径控制</td></tr>
+<tr><td>演练只看行为不看面板</td><td>系统扛住了但告警没响 = 隐性失败</td><td>演练即直播：行为 + 可见性双验收</td></tr>
+<tr><td>矩阵全部首跑全绿</td><td>面试官第一反应是「表演」</td><td>保留并突出那个首跑失败的 cell 的完整故事</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务5 ============ -->
+<section id="t5">
+<h2><span class="num">05</span>任务5 · 简历数字校准与收官归档</h2>
+
+<h3>问题驱动<span class="q">收官的最后一步是把预言变成证据</span></h3>
+<p>Spec v2 从第一天就建立了「预言数字 + 校准注释」体系——简历上每个数字先立据（哪个里程碑的哪个交付物）、后兑现。M5 收官的最后仪式：<strong>逐一对账</strong>。这张对账表是整个项目最有面试杀伤力的单页文档——它把「简历数字」从「我写的」变成「我测的」。</p>
+
+<h3>执行一：预言 vs 实测对账总表</h3>
+<table>
+<tr><th>简历数字</th><th>预言出处</th><th>实测证据</th><th>状态</th></tr>
+<tr><td>P99 38ms @ 3.2万 QPS</td><td>Spec v2 军令状（&lt;50ms）</td><td>M5 压测报告场景 A + 调优证据链（68→38ms 四项）</td><td>✓ 兑现（余量 24%）</td></tr>
+<tr><td>L1 命中率 85%</td><td>M1 缓存基准</td><td>M5 压测级回归 87%（调优后）</td><td>✓ 兑现</td></tr>
+<tr><td>12ms → 2ms</td><td>M1 三级延迟账本</td><td>M1 基准 + M5 场景 B 复验</td><td>✓ 兑现</td></tr>
+<tr><td>回流 &lt; 5s</td><td>M4 五段延迟预算</td><td>M4 打点实测 + M5 场景 B 压力下复验 P99 4.2s</td><td>✓ 兑现</td></tr>
+<tr><td>CPA ↓12%</td><td>M4 对照实验设计</td><td>exp001 实验报告（CI、p 值、护栏全绿）</td><td>✓ 兑现（模拟环境口径，诚实标注）</td></tr>
+<tr><td>超支 &lt; 1.5%</td><td>M3 三级防线设计</td><td>M3 验收 + 混沌 cell-9（×10 延迟下 &lt;3%）</td><td>✓ 兑现</td></tr>
+<tr><td>T+1 对账清零</td><td>M3 四桶清零口径</td><td>连续 7 天对账报告 + cell-12 定位率 100%</td><td>✓ 兑现</td></tr>
+</table>
+<div class="callout green">
+<b>对账表的使用说明：</b>面试前把这张表过一遍，每个数字练成「一句话 + 一份证据 + 一个追问钩子」三件套。例如 P99 38ms：「实测 38（军令状 50）——压测报告场景 A——追问钩子是『第一次压测 68ms，靠 wall-clock 火焰图找到两处等待型瓶颈，四项调优每项单变量验证』」。数字不再是数字，是故事的索引。
+</div>
+
+<h3>执行二：一句话项目介绍终稿（面试开场白）</h3>
+<blockquote style="border-left:3px solid var(--accent); margin:16px 0; padding:12px 18px; background:var(--accent-light); color:var(--text-2); font-size:14px;">
+「AdKernel 是一个 RTA 实时广告决策引擎：媒体每次曝光前毫秒级询问我们参不参竞、出价系数多少。核心是一条五级流水线——限流、特征画像（多级缓存）、策略 DSL 求值、频控、预算——P99 38ms、3.2 万 QPS；外围是一个数据飞轮：转化通过自研消息队列 5 秒内回流更新画像、影响下一次决策，并用随机对照实验证明比传统 T+1 人群包 CPA 低 12%。钱的事有三重纪律：预算三级防线超支控制在 1.5% 内、T+1 与媒体账单对账清零、四级降级总开关保证最坏情况下只是少赚钱不会崩。」
+</blockquote>
+<p>结构拆解：是什么（一句）→ 快在哪（数字一）→ 闭环在哪（数字二）→ 纪律在哪（数字三）——40 秒内埋下四个可追问的入口，每个入口连着 M0-M5 的一册手册。</p>
+
+<h3>执行三：收官归档清单</h3>
+<ul>
+<li><strong>README</strong>：项目动机（业务初心三段叙事）→ 架构图（五级流水线 + 数据飞轮）→ 快速上手 → 军令状与对账总表——GitHub 首页即面试门面；</li>
+<li><strong>ADR 归档</strong>：Spec v2 的 9 条 ADR + 执行中新增决策（Aviator 选型、令牌桶口径、pacing 格子、末次点击口径、分桶互斥域）——每条决策一句话「上下文→选择→后果」；</li>
+<li><strong>15 道深挖题回扫</strong>：Spec v2 的 15 道深挖题逐题自测——每题答案都能落到具体手册章节，答不上的回炉；</li>
+<li><strong>mini-MQ 闭环注脚</strong>：README 末尾注明「回流链路使用同仓库的 mini-MQ 承载」——两个项目互相引用，双项目叙事完整化。</li>
+</ul>
+
+<h3>验收预期</h3>
+<ul>
+<li>对账总表 7/7 兑现，无一数字无证据；</li>
+<li>一句话介绍 40 秒内讲完，四个追问入口全部有册可翻；</li>
+<li>15 道深挖题自测全通过（每题 90 秒内成答——对齐 mini-MQ M6 的三道必考题训练法）；</li>
+<li>AdKernel 主线收官，达成 Spec v2 排期（2026-12 底）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>数字兑现了但讲不出构成</td><td>「38ms 怎么来的」一句卡壳，前面全白讲</td><td>每数字练三件套：一句话+证据+钩子</td></tr>
+<tr><td>对账表只在收官做一次</td><td>数字漂移无人知晓</td><td>对账表进 README 首屏，简历 tex 注释与表互链</td></tr>
+<tr><td>收官变成炫技清单</td><td>README 写成九大件功能罗列，看不到业务</td><td>开场白结构：动机→数字→闭环→纪律，功能是注脚</td></tr>
+<tr><td>双项目各自孤立讲</td><td>AdKernel 与 mini-MQ 之间只剩「都用 Java」</td><td>闭环注脚互相引用：「造了轮子，还造了用轮子的车」</td></tr>
+<tr><td>深挖题自测走过场</td><td>「差不多能答」上考场就是答不出</td><td>计时 90 秒/题，录音回听——mini-MQ M6 验证过的训练法</td></tr>
+</table>
+</section>
+
+<!-- ============ 速览卡 ============ -->
+<section id="cards">
+<h2><span class="num">06</span>三张速览卡</h2>
+
+<div class="card-grid">
+<div class="card blue">
+<div class="card-t">卡1 · 压测六纪律 + 三场景</div>
+<ul>
+<li><strong>六纪律</strong>：预热先行 / 锁频环境 / 口径统一（P99 基准）/ 阶梯加压找拐点 / 同构重跑取中位 / 过程全归档</li>
+<li><strong>场景 A</strong>：基准压测找拐点（拐点值+根因比达标值更有价值）</li>
+<li><strong>场景 B</strong>：决策+回流双链路叠加（单链路压测是装饰品）</li>
+<li><strong>场景 C</strong>：故障注入压降级链（压力下的降级才是真降级）</li>
+<li><strong>军令状</strong>：P99&lt;50ms @ 3.2万 QPS → 实测 38ms（68ms 起步）</li>
+</ul>
+</div>
+<div class="card green">
+<div class="card-t">卡2 · 调优三步法 + 四杀手</div>
+<ul>
+<li><strong>三步法</strong>：分段测量锁方向 → wall-clock 火焰图定性 → 单变量 A/B 验证（先实测、再定位、后优化）</li>
+<li><strong>CPU 图无热点 ≠ 无瓶颈</strong>：等待型瓶颈只能 wall-clock 看到（L2 回源等待、Lua 阻塞）</li>
+<li><strong>68→38ms 四项</strong>：缓存参数再校准（命中 68→87%）/ 频控+预算 Lua 合并（一次 RTT）/ 分配治理（GC 暂停 8→1.2ms）/ Aviator 预加载</li>
+<li><strong>GC 纪律</strong>：日志先行、调分配优先于调参数、变更必回归</li>
+</ul>
+</div>
+<div class="card amber">
+<div class="card-t">卡3 · 可观测 + 混沌收官</div>
+<ul>
+<li><strong>三支柱分工</strong>：metrics 检测 → traces 定位 → logs 解释（requestId 是三者的共享关联键）</li>
+<li><strong>SLI 四条</strong>：P99≤50ms / 可用性≥99.9% / 回流≤5s / 超支≤1.5%（简历数字即 SLO）</li>
+<li><strong>告警分级</strong>：Page（burn rate 超速、KillSwitch≥L2、lag&gt;30s）/ Ticket（超支预警、SRM、命中率滑坡）——告警是传感器不是噪音</li>
+<li><strong>混沌 12 cells</strong>：注入→预期（先写死）→证据三件套；意外的好也算失败；保留一个首跑失败的 cell 当故事</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ============ 动态雷达 ============ -->
+<section id="radar">
+<h2><span class="num">07</span>动态雷达（2026 实证调研）</h2>
+
+<div class="radar-item">
+<div class="rt"><a href="https://blog.csdn.net/weixin_29913663/article/details/167595424" target="_blank">从毫秒到微秒：高并发接口 P99 延迟优化实战（CSDN，2026-10）</a></div>
+<p>P99 从 1.8ms 恶化到 11.8ms 的完整复盘：P50 不变、尾部恶化 = 资源偶发争用；火焰图定位 JSON 序列化占 43%、GC 占 18%；PB 序列化 + Caffeine 前置 + 连接池治理三板斧。</p>
+<p class="adopt">采纳：任务 2 的「头部没变、尾部恶化」诊断入口；分段测量→火焰图定性的排查顺序。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://blog.csdn.net/mafei_it/article/details/166945337" target="_blank">P99 延迟治理：从基准测试到线程池参数调优（CSDN，2026-10）</a></div>
+<p>450 QPS 拐点处 P99 从 120ms 跳到 680ms（5.7 倍）：200 个 Tomcat 线程争抢 10 个 DB 连接；反直觉把线程池从 200 调小到 120 反而救了 P99；阶梯压测每档 60s 的标准做法。</p>
+<p class="adopt">采纳：任务 1 的拐点探测方法论（「拐点值+根因是报告的灵魂」）；阶梯压测 60s/档直接沿用。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://blog.csdn.net/weixin_35794316/article/details/167412752" target="_blank">P99 延迟从 45ms 优化到微秒级：后端性能调优实战指南（CSDN，2026-10）</a></div>
+<p>「平均时延是最坑的指标」；分段测量五时间戳法；压测三纪律（预热 3-5 分钟等 JIT、锁 CPU 频率、指标口径先统一）；火焰图原则：看 CPU 时间最长而非出现次数。</p>
+<p class="adopt">采纳：任务 1 六纪律中三条直接对应（预热/锁频/口径）；P99 基准、均值参考的指标观。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="http://m.toutiao.com/group/7675682549351399970/?upstream_biz=VolcEngine" target="_blank">50 天实测 8 次 Java 性能故障：90% 程序员都踩调优误区（VolcEngine 生态复盘）</a></div>
+<p>8 次故障对比研究：凭经验盲调的 4 次平均耗时 95 分钟，先实测后优化的 4 次平均 29 分钟；「平均正常但 P99 异常」必须做长尾请求剖析；GC 调优看日志优先于调参数。</p>
+<p class="adopt">采纳：任务 2 的「先实测、再定位、后优化」铁律与 GC 三纪律；长尾剖析作为压测后的标准动作。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://cloud.tencent.com/developer/article/2656913" target="_blank">Java 性能调优：从 1198ms 到 239ms 的八个隐形排查（腾讯云开发者社区，2026-04）</a></div>
+<p>八个隐形杀手清单（循环拼接/装箱/异常流程控制/锁粒度/热路径重复建对象）；分配速率 2GB/min→380MB/min 后 GC 频率降 70%；JFR 火焰图「平顶山即热点」。</p>
+<p class="adopt">采纳：任务 2 分配治理项的清单式扫描法；分配速率作为 P99 稳定性隐形指标。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://clickhouse.com/resources/engineering/three-pillars-of-observability" target="_blank">The three pillars of observability — and where the model breaks（ClickHouse 工程博客，2026-07 更新）</a></div>
+<p>三支柱分工的权威表述：metrics 检测（detection）、traces 定位（location）、logs 解释（explanation）；共享 ID 是支柱间的粘合剂；采样与高基数是规模化后的真实痛点。</p>
+<p class="adopt">采纳：任务 3 的「检测→定位→解释」事故排查顺序与关联键设计原则。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://cloud.tencent.com/developer/article/2595354" target="_blank">以 SLI/SLO 为驱动的可观测性：从定义到告警策略（腾讯云开发者社区）</a></div>
+<p>SLI 只选用户感知关键路径（连接池指标不是 SLI）；burn rate 告警（1 小时窗口超 14 倍速消耗才 Page）；Page 与 Ticket 分级——「告警是团队决策的传感器，不是噪音」。</p>
+<p class="adopt">采纳：任务 3 的 SLI 四条选取标准与 Page/Ticket 分级框架；burn rate 方法保留、协作语义按单机项目裁剪。</p>
+</div>
+</section>
+
+<!-- ============ DoD ============ -->
+<section id="dod">
+<h2><span class="num">08</span>DoD 验收清单</h2>
+<p>勾选自动保存到浏览器本地存储（localStorage key: <code>adkernel-m5-dod-v1</code>），刷新不丢。</p>
+
+<div class="dod-item"><input type="checkbox" id="dod1"><label for="dod1">压测器就绪（bench 六纪律全内置）：预热、锁频、口径、阶梯 60s/档、三轮取中位、全量归档——复用 mini-MQ M5 骨架<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod2"><label for="dod2">场景 A/B/C 全跑：3.2 万 QPS 决策 P99 &lt; 50ms；叠加回流劣化 &lt; 10%；故障注入下降级动作 100% 按设计触发<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod3"><label for="dod3">拐点报告：拐点 QPS、跳变倍数、wall-clock 火焰图根因证据齐备（「达标值」之外报告的灵魂章节）<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod4"><label for="dod4">调优证据链：68→38ms 四项调优全部单变量 A/B 验证归档；M2 的频控+预算 Lua 合并伏笔收线<span class="tag">任务2·简历数字</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod5"><label for="dod5">GC 纪律落地：日志先行、调分配优先、ZGC 基线 + 参数变更压测回归；分配速率 1.2GB/min → 240MB/min 数据归档<span class="tag">任务2</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod6"><label for="dod6">四面板上线：决策大盘 / 预算与实验 / 回流链路 / 降级与开关——数据延迟 &lt; 10s，压测与监控同一打点管道（一个事实源）<span class="tag">任务3</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod7"><label for="dod7">SLI/SLO 与告警分级：四条 SLI 即简历数字；Page/Ticket 分级演练 8 类故障零漏报零误报；任意告警 3 分钟内凭 requestId 拉全证据<span class="tag">任务3</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod8"><label for="dod8">混沌矩阵 12 cells 全通过：预期先写后跑、证据三件套归档、演练即直播双验收；保留 ≥1 个首跑失败 cell 的完整修复故事<span class="tag">任务4</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod9"><label for="dod9">预言 vs 实测对账表 7/7：P99 38ms / L1 85% / 12→2ms / 回流 5s / CPA 12% / 超支 1.5% / 对账清零——每数字「一句话+证据+钩子」三件套练成<span class="tag">任务5·简历收官</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod10"><label for="dod10">收官归档完成：README（动机→架构→对账表→mini-MQ 闭环注脚）、ADR 全集、15 道深挖题 90 秒/题自测全过；一句话介绍 40 秒四入口成稿<span class="tag">任务5·项目收官</span></label></div>
+</section>
+
+<!-- ============ 参考 ============ -->
+<section id="refs">
+<h2><span class="num">09</span>参考与来源</h2>
+<ul class="src-list">
+<li><a href="https://blog.csdn.net/weixin_29913663/article/details/167595424" target="_blank">从毫秒到微秒：高并发接口 P99 延迟优化实战 — CSDN（2026-10）</a></li>
+<li><a href="https://blog.csdn.net/mafei_it/article/details/166945337" target="_blank">P99 延迟治理：从基准测试到线程池参数调优 — CSDN（2026-10）</a></li>
+<li><a href="https://blog.csdn.net/weixin_35794316/article/details/167412752" target="_blank">P99 延迟从 45ms 优化到微秒级：后端性能调优实战指南 — CSDN（2026-10）</a></li>
+<li><a href="http://m.toutiao.com/group/7675682549351399970/?upstream_biz=VolcEngine" target="_blank">50 天实测 8 次 Java 性能故障 — VolcEngine 生态复盘</a></li>
+<li><a href="https://cloud.tencent.com/developer/article/2656913" target="_blank">Java 性能调优：从 1198ms 到 239ms 的八个隐形排查 — 腾讯云开发者社区（2026-04）</a></li>
+<li><a href="https://clickhouse.com/resources/engineering/three-pillars-of-observability" target="_blank">The three pillars of observability — ClickHouse Engineering（2026-07 更新）</a></li>
+<li><a href="https://cloud.tencent.com/developer/article/2595354" target="_blank">以 SLI/SLO 为驱动的可观测性：从定义到告警策略 — 腾讯云开发者社区</a></li>
+<li><a href="https://www.influxdata.com/learn/what-is-observability/" target="_blank">What Is Observability? Metrics, Logs, Traces — InfluxData Learn Hub（2026-09）</a></li>
+</ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+// ---------- DoD 勾选持久化 ----------
+(function () {
+  var KEY = 'adkernel-m5-dod-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+  document.querySelectorAll('.dod-item input[type=checkbox]').forEach(function (cb) {
+    var id = cb.id;
+    cb.checked = !!saved[id];
+    cb.closest('.dod-item').classList.toggle('done', cb.checked);
+    cb.addEventListener('change', function () {
+      saved[id] = cb.checked;
+      cb.closest('.dod-item').classList.toggle('done', cb.checked);
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+})();
+
+// ---------- 侧栏滚动高亮 ----------
+(function () {
+  var links = document.querySelectorAll('nav.sidebar a[href^="#"]');
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var sections = document.querySelectorAll('main section[id]');
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        var a = map[en.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(function (s) { observer.observe(s); });
+})();
+</script>
+</body>
+</html>

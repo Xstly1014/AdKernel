@@ -1,0 +1,35 @@
+# QPS 曲线配置：profile = 轮数 + 预热 + 分相曲线
+# 口径纪律（与 M5 一致）：预热段统计剔除（判罚照常）；验收 3 轮取中位作延迟基线
+profiles:
+  # 冒烟：5 分钟平峰 3000（全链路闭环 + 漏斗勾稽）
+  smoke:
+    rounds: 1
+    warmupSec: 30
+    phases:
+      - { qps: 3000, sec: 300 }
+
+  # 验收：稳定 1 万 QPS 持续 5 分钟 + 15k 洪峰 spike 30s，3 轮取中位（DoD k05/k10）
+  acceptance:
+    rounds: 3
+    warmupSec: 30
+    phases:
+      - { qps: 10000, sec: 120 }
+      - { qps: 15000, sec: 30 }   # 洪峰 spike（M3 限流/pacing 的压测场景伏笔）
+      - { qps: 10000, sec: 150 }
+
+  # 断言生效实证：短时低压，配合 rta --fault.blacklist-bypass=true（DoD k07）
+  fault:
+    rounds: 1
+    warmupSec: 0
+    phases:
+      - { qps: 1000, sec: 30 }
+
+  # 日曲线演示：平峰 → 晚高峰 → 洪峰 → 回落
+  daycurve:
+    rounds: 1
+    warmupSec: 15
+    phases:
+      - { qps: 3000, sec: 60 }
+      - { qps: 8000, sec: 60 }
+      - { qps: 15000, sec: 30 }
+      - { qps: 8000, sec: 60 }

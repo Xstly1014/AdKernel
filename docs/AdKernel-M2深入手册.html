@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · M2 深入手册</title>
+<style>
+  :root {
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+    --border: #e5e7eb; --bg: #ffffff; --bg-2: #f9fafb;
+    --green: #059669; --amber: #d97706; --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.75; font-size: 15px; }
+  .layout { display: flex; min-height: 100vh; }
+  nav.sidebar { width: 250px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 28px 12px 40px; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--bg-2); }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a { display: block; padding: 8px 14px; color: var(--text-2); text-decoration: none; border-radius: 6px; font-size: 13.5px; margin-bottom: 2px; }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  pre .cmt { color: #94a3b8; }
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-2); font-weight: 600; color: var(--text); }
+  td { color: var(--text-2); }
+  tr:nth-child(even) td { background: #fcfcfd; }
+  .kp { display: flex; gap: 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13.5px; background: var(--bg-2); }
+  .kp .tag { flex-shrink: 0; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 2px 8px; height: fit-content; }
+  .kp .body { color: var(--text-2); }
+  .kp .body b { color: var(--text); }
+  .expect { border: 1px solid #a7f3d0; background: #ecfdf5; border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 13px; }
+  .expect .t { font-weight: 700; color: var(--green); font-size: 12px; margin-bottom: 6px; }
+  .dod { list-style: none; margin: 12px 0; }
+  .dod li { display: flex; gap: 10px; align-items: flex-start; padding: 7px 8px; border-radius: 6px; }
+  .dod li:hover { background: var(--bg-2); }
+  .dod input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; margin-top: 5px; cursor: pointer; flex-shrink: 0; }
+  .dod label { cursor: pointer; color: var(--text-2); }
+  .dod li.done label { color: var(--text-3); text-decoration: line-through; }
+  .radar-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .radar-item .date { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--accent); font-weight: 700; margin-right: 8px; }
+  .radar-item .impact { display: block; margin-top: 6px; font-size: 12.5px; color: var(--green); }
+  a.ext { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+  a.ext:hover { opacity: .8; }
+  @media (max-width: 860px) { nav.sidebar { display: none; } .content { padding: 28px 20px 80px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · M2 深入手册<small>策略引擎、多计划路由与频控</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#overview">M2 的定位与伏笔</a>
+  <div class="group-label">任务深入</div>
+  <a href="#t1">任务1 · 多计划路由</a>
+  <a href="#t2">任务2 · 规则 DSL（Aviator）</a>
+  <a href="#t3">任务3 · 频控</a>
+  <a href="#t4">任务4 · 热更新与灰度</a>
+  <a href="#t5">任务5 · 安全降级</a>
+  <div class="group-label">附录</div>
+  <a href="#card-engine">速览卡 · 规则引擎四层</a>
+  <a href="#card-freq">速览卡 · 频控设计</a>
+  <a href="#card-degrade">速览卡 · 分层降级语义</a>
+  <a href="#radar">动态雷达 · 2026</a>
+  <a href="#dod">M2 验收清单（DoD）</a>
+  <a href="#refs">参考来源</a>
+  <div class="group-label">手册导航</div>
+  <a href="AdKernel项目开发Spec.html">Spec v2 · 总纲</a>
+  <a href="AdKernel-M0深入手册.html">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html" class="active">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<div>
+  <h1>AdKernel · M2 深入手册</h1>
+  <div class="subtitle">策略是业务的大脑：改策略不停服（热更新）、策略坏了不拖垮主链路（安全降级）、新策略先灰度再全量（5% 试水）、多计划互不串扰（隔离路由）、同一个用户不被骚扰 N 次（频控）。M2 结束时：5+ 条广告人话策略在 Aviator DSL 上运行，压测中切换策略 QPS 零抖动，注入策略异常决策成功率不降，双计划消耗各归各账。</div>
+</div>
+
+<!-- ============ 总纲 ============ -->
+<section id="overview">
+  <h2><span class="num">00</span>M2 的定位与伏笔</h2>
+
+  <h3>为什么策略引擎排在缓存之后<span class="q">问题驱动</span></h3>
+  <p>M1 锁定了特征契约（6 字段 × 消费方），M2 的第一条工作就是把"消费方"做出来——每条策略消费哪些特征字段，M1 的映射表已经写好，<b>策略引擎是照着特征契约的图纸盖的房子</b>。反过来做（先写策略再补特征）会造出悬空字段。另一个前置理由：策略求值必须快（延迟预算 15ms 里它占一块），而这依赖 M1 已经把特征查询的 P99 压到 2ms——大脑再聪明，供血不行也是白搭。</p>
+
+  <h3>本册埋的伏笔</h3>
+  <table>
+    <tr><th style="width:320px">M2 埋的线</th><th>在哪收</th></tr>
+    <tr><td>reason 决策原因码随响应返回</td><td>M4 归因细分（按拒绝原因分布优化策略）；M0 裁判的断言依据升级</td></tr>
+    <tr><td>灰度 = userId 哈希取模 5%</td><td>M4 AB 平台的雏形——M2 的简单哈希是 M4 一致性哈希分流的退化版，演进路径成面试叙事</td></tr>
+    <tr><td>策略 DSL 的规则文件外部化</td><td>M4 对照实验：实验组/基线组策略 = 同一 DSL 引擎加载不同规则集——一次实现两处受益</td></tr>
+    <tr><td>频控检查串行在决策链上</td><td>M5 调优战报现成素材：特征/频控/预算三 IO 并行化（CompletableFuture），P99 收益可量化</td></tr>
+    <tr><td>策略版本审计（变更留痕）</td><td>M5 README 的"生产工程素养"证据；面试答"策略出问题怎么回滚"</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务1 ============ -->
+<section id="t1">
+  <h2><span class="num">01</span>任务1 · 多计划路由</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>真实 RTA 服务同时跑多个广告计划（拉新计划 + 促活计划），各自独立预算、独立策略、独立人群。M0 的层级裁剪已定：计划 = 预算/策略/人群的独立控制单元（业界实证口径："预算只能按计划分配"）。本任务把这个"单元"落成代码结构——<b>隔离不是把字段分开，而是把整条决策上下文分开</b>：A 计划的策略崩了，不能影响 B 计划的决策。</p>
+
+  <h3>决策：路由结构</h3>
+  <pre><code>// 计划注册表: 读写分离 —— 读热路径无锁(ConcurrentHashMap), 写只有配置变更
+private final ConcurrentHashMap&lt;String, CampaignContext&gt; campaigns;
+
+// CampaignContext: 一个计划的全部私有状态, 互相零共享
+record CampaignContext(
+  CampaignConfig config,                 // 日预算/人群包/出价上限/频控参数
+  AtomicReference&lt;StrategyBundle&gt; strategies, // M2 核心见任务4: 独立热更新
+  BudgetLedger budgetLedger             // M3 的预算账本: 每计划独立预扣/熔断
+) { }
+
+// 路由 = 一次 map 查找 + null 检查; 未知 campaignId → 快速失败(专用错误码)
+// 丢弃方案: 单例 StrategyEngine + planId 参数贯穿 —— 字段隔离, 状态共享,
+//          一个计划的策略对象崩了影响全局; 且热更新粒度被迫变成"全或无"</code></pre>
+  <div class="kp"><span class="tag">隔离的三层含义</span><div class="body">① <b>数据隔离</b>：预算账本每计划独立（M3 防超花按计划维度熔断）；② <b>故障隔离</b>：策略求值异常只波及本计划（配合任务5 的默认策略，B 计划无感）；③ <b>更新隔离</b>：A 计划灰度新策略时 B 计划的流量完全不动。三层隔离在面试里一层一层讲，比"我用了 Map"高一个维度。</div></div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>双计划并行压测（3 万 QPS 混合流量）：各自消耗/决策数/拒绝原因分布独立统计，交叉核对零串扰</li>
+      <li>故障隔离实证：对 A 计划注入策略异常，B 计划决策成功率 100% 不受影响</li>
+      <li>未知 campaignId 请求 → 专用错误码（不是 500 也不是 NPE），裁判（M0 模拟器）断言通过</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>A 计划消耗莫名多扣</td><td>两个计划共用了 BudgetLedger 实例（路由时浅拷贝）</td><td>CampaignContext 构造器内 new 出全部私有状态；单测加"双计划预算独立"断言</td></tr>
+    <tr><td>新增计划要重启服务</td><td>注册表没有管理接口</td><td>留一个内部管理端点注册/注销计划（仅绑定 localhost）——顺带是 M5 可观测的挂载点</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务2 ============ -->
+<section id="t2">
+  <h2><span class="num">02</span>任务2 · 规则 DSL：表达式层选型 Aviator</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>策略的业务本质是"条件 → 动作"：<b>条件</b>由特征字段构成（M1 的 6 字段），<b>动作</b>是拒/放/调系数。硬编码 if-else 的问题不是性能，是<b>变更成本</b>：投放策略一天一变，每次变更走发版 = 业务方说"改个判断条件怎么要排到下个版本"。规则引擎让"规则从代码剥离成配置，随时改随时生效"（2026 实证原话）。但选型前必须先回答：<b>我们缺的到底是哪一层能力？</b></p>
+
+  <h3>决策矩阵：四层定位，选表达式层</h3>
+  <table>
+    <tr><th>层</th><th>代表</th><th>解决什么</th><th>AdKernel 需要吗</th></tr>
+    <tr><td>流程层</td><td>LiteFlow</td><td>组件串/并行编排（THEN/WHEN/SWITCH）</td><td>× 决策链只有固定五级流水线，顺序从不变——编排引擎屠龙刀</td></tr>
+    <tr><td>规则层</td><td>Easy-Rules / Drools</td><td>规则集匹配、优先级、Rete 推理</td><td>× 规则总量 5-10 条、无事实推理需求——Rete 是过度设计</td></tr>
+    <tr><td><b>表达式层（采用）</b></td><td><b>Aviator</b></td><td>条件表达式高性能求值</td><td>✓ 策略条件全是单表达式；编译一次百万次求值毫秒级；白名单安全</td></tr>
+    <tr><td>语言层</td><td>Groovy</td><td>任意逻辑、完整编程</td><td>× 可执行任意代码 = 安全审计不过；DSL 求值不需要一门语言</td></tr>
+  </table>
+  <div class="kp"><span class="tag">选型叙事的面试版本</span><div class="body">"2026 年的规则引擎对比文章有个共识：LiteFlow 是施工总包、Easy-Rules 是施工规范手册、Aviator 是计算器、Groovy 是万能施工队——<b>它们不在一个维度上，拿性能互比是关公战秦琼</b>。我缺的只是表达式层：策略是 5-10 条'条件-动作'，五级流水线是固定骨架不需要编排，规则量级不需要 Rete。所以选 Aviator：编译一次后求值开销极小、默认白名单函数集（防注入）、语法类 Java 投放同学可读。"<b>裁剪依据是需求分层分析，不是"哪个火用哪个"</b>——这句话是整个选型决策的价值所在。</div></div>
+
+  <h3>策略集：广告人话 → DSL（验收要件：每条必须业务语义可读）</h3>
+  <pre><code>// rules/campaign-001.properties —— 每条: 条件(Aviator) → 动作(target/bidRatio/reason)
+// R1 已购保护: 已购未满7天 → 拒(钱不花在刚转化的人身上)
+cond:  now - profile.lastConvertTime &lt; 7*86400000
+act :  {target: false, reason: "recently_converted"}
+
+// R2 黑名单: 直接拒(风控名单)
+cond:  profile.blacklisted == true
+act :  {target: false, reason: "blacklisted"}
+
+// R3 高价值沉默: VIP + 沉默(30天未转化) → 加价 1.5 倍触达
+cond:  profile.memberLevel == 'VIP' &amp;&amp; now - profile.lastConvertTime &gt; 30*86400000
+act :  {target: true, bidRatio: 1.5, reason: "high_value_silent"}
+
+// R4 新用户保守: 首次出现<3天 → 中性参与(无历史数据不加价不减价)
+cond:  now - profile.firstSeenTime &lt; 3*86400000
+act :  {target: true, bidRatio: 1.0, reason: "cold_start_neutral"}
+
+// R5 低价值压价: 普通会员且7-30天内转化过 → 降价 0.5(已过 R1 的 7 天保护期, 但仍有近期转化, 触达价值低)
+cond:  profile.memberLevel == 'NORMAL' &amp;&amp; now - profile.lastConvertTime &lt; 30*86400000
+act :  {target: true, bidRatio: 0.5, reason: "recently_converted_lowvalue"}
+
+// 规则求值: 短路有序(R1→R5), 首个命中即返回; 全不命中 → 默认动作(见任务5)</code></pre>
+  <p>注意规则间的<b>顺序即优先级</b>（R1 已购保护排在 R3 高价值前——VIP 用户刚转化也要拒）：优先级语义显式写在规则文件头部注释，这是投放同学的"操作手册"而不是程序员的代码。</p>
+
+  <h3>执行细节：预编译缓存</h3>
+  <p>Aviator 的生产实践（2026-10 实证）：表达式字符串 → <code>compile()</code> 一次 → Expression 对象反复 <code>execute(env)</code>。<b>编译开销发生在策略加载时（冷），求值走预编译对象（热路径零编译）</b>。坑：表达式缓存以字符串为 key，规则文件里多一个空格就是新 key——缓存键做规范化（去空白）后再作 key，防缓存泄漏（实证坑点）。</p>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>5+ 条策略全 DSL 化运行，每条带 reason 码；裁判断言：黑名单用户必拒（R2 生效）</li>
+      <li>策略求值延迟：单条表达式求值 P99 &lt; 0.1ms（预编译后），策略链整体 &lt; 1ms</li>
+      <li>规则优先级语义验证：VIP 已购用户命中 R1 而非 R3（构造用例断言）</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>压测中出现偶发 NPE 中断决策</td><td>表达式里 <code>profile.lastConvertTime</code> 为 null（新用户无转化记录）</td><td>Aviator 空值陷阱（实证坑）：env 填充前统一补默认值（lastConvertTime 缺省 = epoch）；或 DSL 用 <code>include</code> 判空——规则生成器统一处理，不靠规则编写者自觉</td></tr>
+    <tr><td>改了规则文件重启才生效</td><td>忘了接 watch 机制（任务4 的热更新是 DSL 价值的一半）</td><td>任务4 一起验收——"热更新不了"的 DSL 等于没做</td></tr>
+    <tr><td>规则越加越多后可读性崩坏</td><td>规则间隐式依赖（R3 依赖 R1 先拒）</td><td>顺序即优先级必须成文；>15 条时才考虑升级规则层引擎（Easy-Rules），当前量级不预优化</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务3 ============ -->
+<section id="t3">
+  <h2><span class="num">03</span>任务3 · 频控</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>频控的业务动机：同一个用户一天被同一计划曝光 10 次，第 11 次不但无效（用户已无视），还伤害品牌——<b>频控是用户体验和预算效率的双重约束</b>（M0 名词表口径）。工程动机：频控计数是决策链上的第二个外部 IO（第一个是特征），它的窗口算法与原子性直接决定正确性和延迟。</p>
+
+  <h3>决策一：为什么频控在策略层而不是接入层</h3>
+  <p>面试深挖题 11 的答案在此：<b>接入层做通用防护（限流/鉴权/协议），策略层做业务规则</b>——频控上限是每计划各不相同的业务参数（拉新计划严、品牌计划宽），它消费 M1 的特征（impressionCount7d）与决策上下文（campaignId），语义上属于"这个计划要不要参竞"判断的一部分。放接入层会让接入层依赖业务配置，分层崩坏。</p>
+
+  <h3>决策二：窗口算法——自然日计数 + 明确局限</h3>
+  <table>
+    <tr><th>方案</th><th>语义</th><th>坑</th><th>判定</th></tr>
+    <tr><td><b>自然日 INCR（采用）</b></td><td>"每日不超过 N 次"——对齐投放行业的频控口径（投放后台配的就是日频控）</td><td>窗口边界双倍脉冲（23:59:59 曝光 N + 00:00:01 又 N）</td><td>✓ 频控防的是"骚扰"，不是黑产攻击——边界处多曝光几次用户体验影响有限；脉冲局限写进 ADR</td></tr>
+    <tr><td>ZSet 滑动窗口</td><td>近 24h 连续窗口，零脉冲</td><td>每用户每计划一个 ZSet，内存 O(曝光数)；黑产对抗场景才必要</td><td>× 防刷单口径的方案（2026-10 实证是黑产场景）；升级路径在 ADR 注明</td></tr>
+  </table>
+
+  <h3>决策三：计数时点——检查在决策，记录在回传</h3>
+  <pre><code>// 频控的时序困境: 决策时(参竞瞬间)该曝光还没发生, 竞价还可能输
+// → 检查(决策链): GET freq:{campaignId}:{userId} → ≥N 则 reason=freq_capped 拒
+//   记录(回传处理): 收到 EXPOSURE 回传事件时 INCR
+// 语义: 本次决策用"截至上一次曝光"的计数 —— 滞后一拍是语义妥协:
+//   媒体回传本身有秒级时延, 频控本来就是近似的(业界同款);
+//   换来的是"不预扣不透支" —— 参竞≠曝光, 竞价输了不该计数
+//
+// 原子性: 检查在决策链(读), 记录在回传流(写), 读写异流无竞态;
+// INCR+EXPIRE 用 Lua 一次往返(INCR / 到次日零点 EXPIRE / 判定 三步原子)
+// 时钟: 用 Redis TIME 而非应用时钟 —— 计算次日零点口径, 消除多实例时钟漂移</code></pre>
+  <div class="kp"><span class="tag">Lua 原子性的选型论据（顺带覆盖 M3 限流的知识点）</span><div class="body">Redis 原子执行有三条路：<b>MULTI/EXEC</b> 不能在事务内读值后分支（频控需要"读了计数再决定写不写"）；<b>WATCH+MULTI</b> 高并发下冲突重试风暴（"争抢越激烈重试越多"——最坏行为）；<b>Lua 脚本</b> 原子执行、可 if/then 分支、单次往返（TOCTOU 竞态的标准解）。频控/限流这类"读-判-写"三步操作，Lua 是唯一正解——这条论据 M3 限流直接复用。</div></div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>频控生效实证：单用户定向流量打满 N 次/日后，裁判断言后续参竞决策全部 reason=freq_capped</li>
+      <li>滞后一拍语义验证：第 N+1 次决策在回传未到达前仍放行（设计如此），回传落地后拒绝——行为与文档口径一致</li>
+      <li>跨零点测试：日切时计数归零、EXPIRE 不留死 key</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>频控 key 堆积内存</td><td>EXPIRE 忘设或设成了"无当日语义"的固定值</td><td>EXPIRE 到当日 24 点（Redis TIME 计算）；冷用户 key 次日自动蒸发</td></tr>
+    <tr><td>频控查询拖慢决策链</td><td>频控 GET 与特征查询串行执行</td><td>当前先记录数字（M5 伏笔：三 IO 并行化）；单次 GET ~1ms 在预算内</td></tr>
+    <tr><td>计数永远比实际曝光少</td><td>只统计了 AdKernel 参竞的曝光，但频控语义含媒体全量曝光（跨计划）</td><td>简化口径成文：AdKernel 频控只约束本系统参竞带来的曝光；真实系统媒体侧有全量频控，ADR 写明边界</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务4 ============ -->
+<section id="t4">
+  <h2><span class="num">04</span>任务4 · 热更新与灰度</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>DSL 的价值一半在"规则是配置"，另一半在"配置改了立即生效"——没有热更新的 DSL 只是搬了家的 if-else。同时，直接全量上新策略 = <b>拿全量预算赌新策略</b>：新规则有 bug 时 3 万 QPS 全部错误决策。所以热更新必须自带灰度：新策略先放 5% 流量，观察无异常再全量。</p>
+
+  <h3>热更新：AtomicReference 原子切换</h3>
+  <pre><code>// StrategyBundle: 一组预编译好的规则(不可变对象), 整体替换而非逐条改
+public final class StrategyBundle {
+  final List&lt;CompiledRule&gt; rules;  // 顺序即优先级, 编译期固定
+  final String version;           // 版本审计: 谁在何时把 v3 换成 v4
+}
+// 切换: strategies.set(newBundle) —— 引用替换, 读侧永远拿到完整一致的 bundle
+//   正在求值旧 bundle 的请求自然跑完(旧对象不可变, 不会被改坏)
+// 写侧: watch 线程发现规则文件变更 → 编译新 bundle → 编译失败=拒绝切换(旧版本继续服务)
+//       → set() 替换 → 记录审计日志(version/operator/规则摘要)
+// 读侧: 决策链每次请求 get() 一次 —— 无锁, 无拷贝</code></pre>
+  <div class="kp"><span class="tag">为什么 AtomicReference 就够（而不是读写锁）</span><div class="body">ADX 实证模式同款。核心洞察：<b>策略集是不可变对象 + 引用替换</b>——读者拿到旧引用就安全跑完旧逻辑，新读者拿到新引用跑新逻辑，中间不存在"改了一半"的状态。读写锁解决的是"可变对象的部分更新"问题，而我们根本不做部分更新。这就是"用不可变性消灭并发问题"——面试讲并发时的高分素材。</div></div>
+
+  <h3>灰度：userId 哈希取模 5%（M4 AB 平台的雏形）</h3>
+  <pre><code>// 新版本 bundle 上线: hash(userId) % 100 &lt; 5 → newBundle, 其余 → oldBundle
+//   哈希而非常量开关: 同一用户稳定落在同一侧(不会今天新策略明天旧策略)
+//   —— 这就是 M4 一致性哈希分流的退化版, 届时演进为正式实验平台
+// 回退: 灰度期间异常率/拒绝率异常 → set(oldBundle) 一键全量回退, 秒级
+// 观察指标: 新策略组的决策率/bidRatio 分布/reason 分布 vs 旧策略组 —— M5 面板出对比曲线</code></pre>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>压测中改规则文件（bidRatio 1.5→2.0）：新决策即时生效（下一个请求起），QPS/延迟曲线零抖动</li>
+      <li>编译失败保护：写入一条语法错误的规则 → 切换被拒、旧版本继续服务、告警埋点触发</li>
+      <li>灰度生效：5% 流量 reason/决策分布与 95% 显著不同；一键回退 &lt; 1s 生效</li>
+      <li>版本审计：每次切换留痕（版本号/时间/规则摘要），可查最近 10 次变更</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>热更新后偶发 ClassCastException</td><td>规则里引用的自定义函数类被重新加载（类加载器泄漏）</td><td>Aviator 自定义函数用静态注册（全局一份），规则文件只存表达式不存函数定义——函数属于代码不属于配置</td></tr>
+    <tr><td>灰度组流量比配 5% 偏差大</td><td>userId 哈希分布不均（模拟器 ID 生成有模式）</td><td>用 murmur3 等雪崩哈希；灰度比例断言 ±0.5% 内进冒烟</td></tr>
+    <tr><td>watch 误触发频繁重编译</td><td>编辑器保存产生临时文件/多次写事件</td><td>watch 去抖（500ms 静默期）+ 内容哈希比对（变了才编译）</td></tr>
+  </table>
+</section>
+
+<!-- ============ 任务5 ============ -->
+<section id="t5">
+  <h2><span class="num">05</span>任务5 · 安全降级：策略异常不阻断主链路</h2>
+
+  <h3>要解决的问题<span class="q">问题驱动</span></h3>
+  <p>策略是业务大脑，但大脑抽风不能心脏骤停：新上的规则有 bug（空指针/除零/类型错）、Aviator 求值抛异常时，<b>决策不能失败——失败的代价是媒体按超时/错误处理，错误率超红线照样被清退</b>（M0 的生存指标）。ADX 实证原话："策略异常不阻断主链路。"</p>
+
+  <h3>分层降级语义（本任务的核心设计）</h3>
+  <table>
+    <tr><th>层</th><th>降级触发</th><th>降级动作</th><th>为什么是这个语义</th></tr>
+    <tr><td>特征层（M1 已建）</td><td>查不到数据（超时/miss）</td><td><b>保守</b>：默认画像→不参竞/低出价</td><td>信息不足时宁可不做——没有数据支持的决策是赌博</td></tr>
+    <tr><td><b>策略层（本任务）</b></td><td>有数据没逻辑（规则抛异常）</td><td><b>中性</b>：target=true + bidRatio=1.0（无策略基线）</td><td>特征数据是可信的，只是策略坏了——回退到"无 RTA 增益"的基线投放，损失的只是优化增益，不损失基本投放</td></tr>
+  </table>
+  <div class="callout"><b>保守与中性的区别是本设计的心脏</b>：特征层降保守（缺数据=拒绝），策略层降中性（缺逻辑=基线）——<b>降级的默认值由"缺的是什么"决定</b>，不是拍脑袋统一返回拒绝。面试被问"降级策略怎么设计"时，这个分层论证比"我们都返回默认值"高两个段位。每次策略降级：reason=strategy_fallback + 告警埋点（degraded_strategy 计数，M5 面板）。</div>
+
+  <h3>验收预期</h3>
+  <div class="expect">
+    <div class="t">通过标准</div>
+    <ul>
+      <li>注入实验：压测中热更新一条会抛异常的规则 → 触发策略层降级 → 决策成功率 100%、P99 无尖刺、degraded_strategy 计数与异常规则命中数一致</li>
+      <li>降级语义正确：降级响应 bidRatio=1.0/target=true，裁判按"中性参与"校验通过</li>
+      <li>隔离联动：异常规则只影响其计划（A 计划降级中 B 计划策略正常，任务1 的故障隔离实证）</li>
+    </ul>
+  </div>
+
+  <h3>坑速查表</h3>
+  <table>
+    <tr><th style="width:280px">症状</th><th>原因</th><th>处置</th></tr>
+    <tr><td>降级后决策率暴跌</td><td>默认值设成了 target=false（保守）而不是中性</td><td>对照分层语义表：策略层=中性基线；决策率是媒体考核指标，全拒=自废武功</td></tr>
+    <tr><td>异常规则持续吃流量</td><td>降级吞了异常但没人知道</td><td>降级率进告警（M5）；灰度发布的意义就是让异常规则只碰 5% 流量</td></tr>
+    <tr><td>规则异常导致响应超时</td><td>求值外层没 catch 或 catch 后做了重试</td><td>策略求值一次、不重试、不重载——快失败快降级；重试留给写入侧（回传流）</td></tr>
+  </table>
+</section>
+
+<!-- ============ 速览卡1 ============ -->
+<section id="card-engine">
+  <h2><span class="num">06</span>速览卡 · 规则引擎四层定位（面试高频）</h2>
+  <table>
+    <tr><th style="width:110px">层</th><th>代表</th><th>类比</th><th>一句话</th></tr>
+    <tr><td>流程层</td><td>LiteFlow</td><td>施工总包</td><td>管组件怎么跑（THEN/WHEN/SWITCH 编排），不管组件干什么</td></tr>
+    <tr><td>规则层</td><td>Easy-Rules/Drools</td><td>施工规范手册</td><td>条件-动作规则集匹配与推理（Rete），适合规则多且需推理</td></tr>
+    <tr><td>表达式层</td><td>Aviator/MVEL/SpEL</td><td>计算器</td><td>单表达式高性能求值，编译一次跑百万次</td></tr>
+    <tr><td>语言层</td><td>Groovy</td><td>万能施工队</td><td>一门完整语言，自由度最大、安全风险最大（可执行任意代码）</td></tr>
+  </table>
+  <p>AdKernel 选型答案："四者不在一个维度（拿它们比性能是关公战秦琼）。我缺的是表达式层：策略=5-10 条条件-动作，流水线骨架固定不需要编排，规则量级不需要 Rete。Aviator——编译求值快、白名单安全、语法投放同学可读。"<b>先做需求分层，再选工具</b>，这是方法论不是知识点。</p>
+</section>
+
+<!-- ============ 速览卡2 ============ -->
+<section id="card-freq">
+  <h2><span class="num">07</span>速览卡 · 频控设计（口袋版）</h2>
+  <table>
+    <tr><th style="width:150px">要点</th><th>内容</th></tr>
+    <tr><td>业务动机</td><td>用户体验 + 预算效率双约束（第 11 次曝光无效且伤品牌）</td></tr>
+    <tr><td>分层归属</td><td>策略层（业务规则、每计划独立参数），不是接入层（通用防护）</td></tr>
+    <tr><td>窗口口径</td><td>自然日计数（对齐投放行业"日频控"口径）；边界脉冲局限写 ADR，升级路径=ZSet 滑动窗口（防黑产场景才必要）</td></tr>
+    <tr><td>计数时点</td><td>检查在决策（GET）、记录在回传（INCR）——参竞≠曝光，竞价输了不计数；滞后一拍是语义妥协（业界同款）</td></tr>
+    <tr><td>原子性</td><td>INCR/判定/EXPIRE 用 Lua 单次往返——TOCTOU 标准解；MULTI 不能分支、WATCH 高并发重试风暴</td></tr>
+    <tr><td>时钟</td><td>Redis TIME 取时（算次日零点 EXPIRE），消除多实例时钟漂移</td></tr>
+  </table>
+</section>
+
+<!-- ============ 速览卡3 ============ -->
+<section id="card-degrade">
+  <h2><span class="num">08</span>速览卡 · 分层降级语义（面试两段位素材）</h2>
+  <table>
+    <tr><th style="width:130px">降级层</th><th>缺什么</th><th>默认值</th><th>语义</th></tr>
+    <tr><td>特征层</td><td>缺数据</td><td>保守（不参竞/低出价）</td><td>信息不足宁可不做</td></tr>
+    <tr><td>策略层</td><td>缺逻辑</td><td>中性（基线参与 bidRatio=1.0）</td><td>数据可信，回退无增益基线</td></tr>
+    <tr><td>预算层（M3）</td><td>缺额度</td><td>拒绝（reason=budget_exhausted）</td><td>钱花完了就是花完了</td></tr>
+  </table>
+  <p>核心句："降级的默认值由<b>缺的是什么</b>决定——缺数据保守、缺逻辑中性、缺额度拒绝。统一返回一个默认值是把三个不同的失败当成一个处理。"</p>
+</section>
+
+<!-- ============ 动态雷达 ============ -->
+<section id="radar">
+  <h2><span class="num">09</span>动态雷达 · 2026（M2 相关）</h2>
+
+  <div class="radar-item"><span class="date">2026-09-15</span><b>方法论：Java 规则引擎选型对决（LiteFlow/Easy-Rules/Aviator/Groovy）</b>——四者定位分层（编排/规则/表达式/语言），"规则引擎不是银弹，选对了才是解药"；选型先问业务在哪一层需要规则能力。<span class="impact">对项目的影响：任务2 决策矩阵的四层框架直接来源；"关公战秦琼"的选型叙事出处。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-13</span><b>实证：Aviator 从选型到生产级规则引擎落地</b>——四维评估（语法/性能/安全/生态）；生产架构三件套：缓存预编译 + <b>灰度发布 + 版本审计</b>；生产坑：空指针陷阱、表达式缓存泄漏、类加载冲突。<span class="impact">对项目的影响：任务4 热更新+灰度+审计的架构直接对齐该实证；空值陷阱与缓存键规范化坑的出处。</span></div>
+
+  <div class="radar-item"><span class="date">2026-09-23</span><b>架构：决策系统四层拆分（流程/规则/表达式/语言）</b>——"明明只需要表达式计算能力，非要引入完整规则引擎，维护成本比业务代码还高"；Groovy 脚本当瑞士军刀 → ClassLoader 内存告警。<span class="impact">对项目的影响：裁剪论据（不引 LiteFlow/Easy-Rules）的引用出处；防过度设计的正面案例。</span></div>
+
+  <div class="radar-item"><span class="date">2026-03-20</span><b>官方：Redis 五种限流算法对比（Redis 官方教程）</b>——fixed window（边界 2x 突发）/sliding window log（ZSet 精确）/token bucket（允许突发）/leaky bucket（严格平滑）对比表；原子性三方案（MULTI 不能分支、WATCH 重试风暴、Lua 单次往返可分支）。<span class="impact">对项目的影响：频控窗口算法决策依据；Lua 原子性论据（M3 限流复用）。</span></div>
+
+  <div class="radar-item"><span class="date">2026-10-15</span><b>实战：Redis ZSet 滑动窗口限流防黑产刷单</b>——"窗口临界点双倍脉冲"：黑产在 00:00:00.999 与 00:00:01.001 各打 100 次，2ms 内 200 并发突破 100 QPS 底线；ZSet 四步（清理/统计/判定/过期）+ 原子 Lua。<span class="impact">对项目的影响：自然日窗口的脉冲局限论证来源（频控防骚扰 vs 防黑产的口径区分）；升级路径的参照实现。</span></div>
+
+  <div class="radar-item"><span class="date">2026</span><b>实证：在线策略引擎设计（ADX 案例，v1 调研延续）</b>——策略模式+模板方法框架、AtomicReference 本地缓存热更新、"策略异常不阻断主链路"、本地限流器、"离线负责算在线负责判"。<span class="impact">对项目的影响：任务4/任务5 的核心模式出处（AtomicReference 不可变替换、异常不阻断）。</span></div>
+</section>
+
+<!-- ============ DoD ============ -->
+<section id="dod">
+  <h2><span class="num">10</span>M2 验收清单（DoD）</h2>
+  <ul class="dod" id="dod-list">
+    <li><input type="checkbox" id="k01"><label for="k01">多计划路由：双计划并行压测消耗/决策/原因分布独立统计，零串扰；故障隔离实证（A 崩 B 无感）</label></li>
+    <li><input type="checkbox" id="k02"><label for="k02">5+ 条广告人话策略 DSL 化运行，每条带 reason 码，优先级语义成文</label></li>
+    <li><input type="checkbox" id="k03"><label for="k03">策略求值 P99 &lt; 1ms（预编译缓存生效，表达式缓存键规范化）</label></li>
+    <li><input type="checkbox" id="k04"><label for="k04">空值防线：新用户（特征缺省）决策不抛 NPE（默认值填充生效）</label></li>
+    <li><input type="checkbox" id="k05"><label for="k05">频控生效：单用户打满 N 次/日后全部 reason=freq_capped；跨零点归零</label></li>
+    <li><input type="checkbox" id="k06"><label for="k06">频控计数时点行为与"检查在决策/记录在回传"文档口径一致</label></li>
+    <li><input type="checkbox" id="k07"><label for="k07">热更新：压测中改规则即时生效，QPS/延迟零抖动；编译失败拒绝切换（旧版本续服）</label></li>
+    <li><input type="checkbox" id="k08"><label for="k08">灰度：5% 流量哈希稳定（±0.5%），新旧策略组指标可对比，一键回退 &lt; 1s</label></li>
+    <li><input type="checkbox" id="k09"><label for="k09">版本审计：切换留痕（版本/时间/规则摘要），可查最近 10 次</label></li>
+    <li><input type="checkbox" id="k10"><label for="k10">安全降级：注入异常规则 → 决策成功率 100%、P99 无尖刺、degraded_strategy 计数准确、降级值为中性基线</label></li>
+  </ul>
+</section>
+
+<!-- ============ 参考 ============ -->
+<section id="refs">
+  <h2><span class="num">11</span>参考来源</h2>
+  <ul>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_32520095/article/details/165511537" target="_blank">Java 规则引擎选型对决：LiteFlow、Easy-Rules、Aviator、Groovy 硬核对比（CSDN，2026-09-15）</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_33393017/article/details/167895732" target="_blank">Aviator 表达式引擎实战：从选型到生产级规则引擎落地（CSDN，2026-10-13）</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/weixin_29234509/article/details/166284852" target="_blank">规则引擎选型：LiteFlow、Easy-Rules、Aviator 与 Groovy 的定位与组合（CSDN，2026-09-23）</a></li>
+    <li><a class="ext" href="https://redis.io/tutorials/howtos/ratelimiting/" target="_blank">Build 5 Rate Limiters with Redis（Redis 官方教程，2026-03-20）</a></li>
+    <li><a class="ext" href="https://blog.csdn.net/alex_goden/article/details/167131233" target="_blank">Redis 分布式滑动窗口限流算法：防刷黑产高频刷单与羊毛党拦截（CSDN，2026-10-15）</a></li>
+    <li><a class="ext" href="https://redis.io/docs/latest/develop/use-cases/rate-limiter/redis-py/" target="_blank">Token bucket rate limiter with Redis（Redis 官方文档）</a></li>
+  </ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+  const KEY = 'adkernel-m2-dod-v1';
+  const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+  const boxes = Array.from(document.querySelectorAll('.dod input[type=checkbox]'));
+  boxes.forEach(b => {
+    b.checked = !!saved[b.id];
+    b.closest('li').classList.toggle('done', b.checked);
+    b.addEventListener('change', () => {
+      saved[b.id] = b.checked;
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      b.closest('li').classList.toggle('done', b.checked);
+    });
+  });
+  const links = Array.from(document.querySelectorAll('nav.sidebar a[href^="#"]'));
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const idx = sections.indexOf(e.target);
+        if (idx >= 0) links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(s => s && observer.observe(s));
+</script>
+</body>
+</html>

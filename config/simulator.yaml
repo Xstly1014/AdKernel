@@ -1,0 +1,20 @@
+# 媒体模拟器主配置（媒体侧身份：流量生产者 + 裁判 + 账单生成者）
+endpoints:
+  decisionUrl: http://127.0.0.1:9100/api/rta/decision
+  eventUrl: http://127.0.0.1:9100/api/event
+
+userPool:
+  size: 100000     # 用户池规模（M1 特征库将预置 50 万，届时同步调大）
+  zipfS: 0.86      # Zipf 指数：s=1.0 纯 Zipf 的 Top20%≈87%，取 0.86 校准到 ≈80%（k06 口径）
+  fakeRatio: 0.10  # 伪造 ID 比例（与真实 ID 同格式，服务端不可区分；M1 防穿透靶子）
+
+scenes:
+  feed: 0.7        # 信息流（行业主力场景）
+  splash: 0.3      # 开屏
+
+auth:
+  secretKey: adkernel-m0-secret   # 与 adkernel-rta 共享（application.yml rta.secret-key）
+
+clientTimeoutMs: 60   # 媒体侧超时红线：超时按媒体默认策略处理（不参竞），延迟统计只含已应答请求
+
+dataDir: data          # 运行产出根目录（相对 CWD=仓库根）

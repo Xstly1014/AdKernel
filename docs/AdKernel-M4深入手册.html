@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdKernel · M4 深入手册</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --bg-2: #f9fafb;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.75; font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  nav.sidebar {
+    width: 250px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 28px 12px 40px; position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; background: var(--bg-2);
+  }
+  nav.sidebar .brand { font-weight: 700; font-size: 16px; padding: 0 14px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  nav.sidebar .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  nav.sidebar a { display: block; padding: 8px 14px; color: var(--text-2); text-decoration: none; border-radius: 6px; font-size: 13.5px; margin-bottom: 2px; transition: background .15s, color .15s; }
+  nav.sidebar a:hover { background: #eef2f7; color: var(--text); }
+  nav.sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  nav.sidebar .group-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 14px 14px 6px; font-weight: 600; }
+
+  main { flex: 1; min-width: 0; }
+  .content { max-width: 860px; margin: 0 auto; padding: 48px 48px 100px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+  .subtitle { color: var(--text-3); font-size: 14.5px; margin-bottom: 34px; }
+  h2 { font-size: 21px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  h2 .num { color: var(--accent); font-family: ui-monospace, monospace; font-size: 15px; margin-right: 8px; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  h3 .q { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 1px 8px; vertical-align: 2px; margin-left: 8px; }
+  h4 { font-size: 14.5px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-2); }
+  ul, ol { margin: 0 0 14px 22px; color: var(--text-2); }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-3); }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 18px; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  pre .cmt { color: #94a3b8; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-light); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: var(--text-2); }
+  .callout.green { border-color: var(--green); background: #ecfdf5; }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.red { border-color: var(--red); background: #fef2f2; }
+  .callout b { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th { background: var(--bg-2); text-align: left; padding: 9px 12px; border: 1px solid var(--border); font-weight: 600; color: var(--text); }
+  td { padding: 9px 12px; border: 1px solid var(--border); color: var(--text-2); vertical-align: top; }
+  tr:nth-child(even) td { background: #fcfcfd; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 24px; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; background: #fff; }
+  .card .card-t { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .card p, .card li { font-size: 13px; color: var(--text-2); }
+  .card ul { margin-left: 18px; }
+  .card.green { border-top: 3px solid var(--green); }
+  .card.amber { border-top: 3px solid var(--amber); }
+  .card.red { border-top: 3px solid var(--red); }
+  .card.blue { border-top: 3px solid var(--accent); }
+
+  .dod-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+  .dod-item:hover { background: var(--bg-2); }
+  .dod-item input { margin-top: 5px; accent-color: var(--green); width: 15px; height: 15px; }
+  .dod-item label { cursor: pointer; font-size: 14px; color: var(--text-2); }
+  .dod-item.done label { text-decoration: line-through; color: var(--text-3); }
+  .dod-item .tag { font-size: 11px; color: var(--text-3); background: var(--bg-2); border-radius: 4px; padding: 1px 6px; margin-left: 8px; white-space: nowrap; }
+
+  .radar-item { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .radar-item .rt { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .radar-item .rt a { color: var(--accent); text-decoration: none; }
+  .radar-item p { font-size: 13px; margin-bottom: 4px; }
+  .radar-item .adopt { font-size: 12.5px; color: var(--green); font-weight: 600; }
+
+  .src-list li { margin-bottom: 10px; font-size: 13.5px; }
+  .src-list a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand">AdKernel · M4 深入手册<small>归因回流、特征近线更新与 AB 实验</small></div>
+  <div class="group-label">总纲</div>
+  <a href="#overview">总纲与伏笔收线</a>
+  <div class="group-label">五个任务</div>
+  <a href="#t1">任务1 · 归因引擎</a>
+  <a href="#t2">任务2 · 转化回流链路</a>
+  <a href="#t3">任务3 · 特征近线更新</a>
+  <a href="#t4">任务4 · AB 实验分桶</a>
+  <a href="#t5">任务5 · 对照实验与报表</a>
+  <div class="group-label">速查</div>
+  <a href="#cards">三张速览卡</a>
+  <a href="#radar">动态雷达</a>
+  <a href="#dod">DoD 验收清单</a>
+  <a href="#refs">参考与来源</a>
+  <div class="group-label">手册导航</div>
+  <a href="AdKernel项目开发Spec.html">Spec v2 · 总纲</a>
+  <a href="AdKernel-M0深入手册.html">M0 · 业务域建模与媒体模拟器</a>
+  <a href="AdKernel-M1深入手册.html">M1 · 特征服务与多级缓存</a>
+  <a href="AdKernel-M2深入手册.html">M2 · 策略引擎、多计划路由与频控</a>
+  <a href="AdKernel-M3深入手册.html">M3 · 限流、预算、对账与降级总开关</a>
+  <a href="AdKernel-M4深入手册.html" class="active">M4 · 归因回流、近线更新与 AB 实验</a>
+  <a href="AdKernel-M5深入手册.html">M5 · 压测、可观测与收官</a>
+</nav>
+
+<main>
+<div class="content">
+
+<h1>M4 · 归因回流、特征近线更新与 AB 实验</h1>
+<p class="subtitle">AdKernel 里程碑四 —— 让系统「会呼吸」：转化回流改写画像，画像影响下次决策，AB 实验证明这一切真的有效。</p>
+
+<!-- ============ 总纲 ============ -->
+<section id="overview">
+<h2><span class="num">00</span>总纲与伏笔收线</h2>
+
+<p>M3 结束时，AdKernel 已经是一个「花钱有纪律」的系统：限流挡住自己打挂自己、预算三级防线防超花、对账证明每一分钱的清白、总开关保底生存。但到现在为止，这个系统还只能算「单向流水线」——画像数据是投放前预置好的静态货物（M0 的内存 Map），策略再聪明，学的也是昨天的世界。M4 是整个项目的<strong>灵魂里程碑</strong>（Spec v2 降级线定义）：补上<strong>归因 → 回流 → 近线更新 → 影响下次决策</strong>的数据飞轮，并用 AB 对照实验把「飞轮真的在转」这件事变成统计上站得住脚的数字。</p>
+
+<div class="callout">
+<b>M4 与简历数字的对应关系（resume0.2.tex 第三、四条 bullet 溯源）：</b>第三条「转化回流数据闭环：已转化即排除端到端 <strong>&lt; 5s</strong>」= 任务 2 端到端验收；第四条「AB 实验体系：CPA 优化 <strong>12%</strong>」= 任务 5 对照实验结论。两个数字都在本册闭环，简历第三、四条 bullet 从此全部两跳可溯源（L1 85%、12ms→2ms 等性能数字按 Spec v2 定版原则不上简历，是 M1 交付的追问弹药）。
+</div>
+
+<h3>M2 / M3 埋给 M4 的伏笔（本册收线）</h3>
+<table>
+<tr><th>上游伏笔</th><th>M4 收线位置</th><th>如何兑现</th></tr>
+<tr><td>M0：requestId 贯穿五类记录（决策/曝光/点击/转化/账单）</td><td>任务 1 归因引擎</td><td>转化事件凭 requestId 反查决策链——归因的钥匙在 M0 就已铸好，M4 只是转动它</td></tr>
+<tr><td>M0：expId 实验组透传闭环</td><td>任务 4 分桶平台</td><td>expId 从「占位字段」升级为实验分组的运行时载体</td></tr>
+<tr><td>M2：userId 哈希 5% 灰度</td><td>任务 4 分桶平台</td><td>灰度的哈希函数升级为 MurmurHash+salt 分桶，5% 灰度是分桶平台的第一个用户</td></tr>
+<tr><td>M2：DSL 外部化、双策略集</td><td>任务 4 / 任务 5</td><td>实验组与对照组各挂一套 StrategyBundle——A/B 两组策略在 M2 已埋好接口</td></tr>
+<tr><td>M2：reason 码全链路打点</td><td>任务 5 报表诊断指标</td><td>两组 reason 码分布差异解释「为什么实验组 CPA 更低」——拒绝原因的结构即诊断</td></tr>
+<tr><td>M3：对账差异桶②「丢回传」</td><td>任务 2 回流可靠性</td><td>重试 + 补偿 + 终态对齐的回流治理，让桶②从「事后补偿」变为「事前预防」</td></tr>
+<tr><td>M3：pacing 消耗曲线 / 格子账本</td><td>任务 5 报表护栏指标</td><td>实验公平性的成本侧证据：两组花费偏差 &lt; 5% 才有资格比较效果</td></tr>
+<tr><td>M3：L1 预扣用静态 winRate 估计</td><td>任务 3 近线更新</td><td>归因数据回流校准 winRate——M3 坑表里埋的「闭环校准」在此兑现</td></tr>
+</table>
+
+<h3>M4 埋给 M5 的伏笔</h3>
+<table>
+<tr><th>本册伏笔</th><th>下游收线</th></tr>
+<tr><td>回流链路端到端延迟打点（五段分解）</td><td>M5 可观测：回流延迟 P99 面板与告警</td></tr>
+<tr><td>mini-MQ 消费链路成为决策外的新组件</td><td>M5 全景压测：回流链路也在压测范围内（决策高峰与回流高峰叠加场景）</td></tr>
+<tr><td>CPA 12%、回流&lt;5s 实测值</td><td>M5 简历 bullet 填数校准：预言数字与实测数字对账</td></tr>
+</table>
+
+<div class="callout green">
+<b>本册的核心面试叙事（一句话版）：</b>「M4 之前 AdKernel 是一条流水线，M4 之后是一个飞轮——转化事件通过 mini-MQ 在 5 秒内回流改写用户画像，画像变化在缓存刷新后影响下一次决策；而这个飞轮的价值不靠感觉，靠一组 RTA 与 T+1 人群包的随机对照实验，CPA 下降 12%、统计显著，每一个数字都能下钻到 requestId。」
+</div>
+</section>
+
+<!-- ============ 任务1 ============ -->
+<section id="t1">
+<h2><span class="num">01</span>任务1 · 归因引擎：转化的功劳记给谁</h2>
+
+<h3>问题驱动<span class="q">为什么必须先有归因</span></h3>
+<p>用户在 8:00 看到计划 A 的广告没买，10:00 看到计划 B 的广告买了——这单转化记给谁？没有归因引擎，M0 的转化回传只是一条孤立记录，回流（任务 2）无从谈起：不知道功劳属于哪次决策，就不知道该更新谁的画像、该把成本记在哪个计划头上、该让哪个策略变聪明。归因是回流的第一道工序，也是实验报表（任务 5）口径的地基——<strong>归因的分歧很少发生在算法上，多发在同一个词指的不是同一件事上</strong>（动态雷达实证），所以归因引擎的第一交付物不是代码，是口径。</p>
+
+<h3>决策：模型与口径三选</h3>
+<table>
+<tr><th>归因模型</th><th>规则</th><th>业界采用</th><th>评价</th></tr>
+<tr><td><strong>末次点击（LCA）✓</strong></td><td>功劳记给转化前最后一次点击的广告</td><td>Microsoft Advertising 默认、Apple AdAttributionKit、Google Ads 可选</td><td>简单、可解释、行业标准默认</td></tr>
+<tr><td>首次点击</td><td>功劳记给第一次点击</td><td>Adobe 报表可选项</td><td>高估拉新渠道</td></tr>
+<tr><td>数据驱动</td><td>机器学习按历史转化学出各触点权重</td><td>Google Ads 可选项</td><td>准确但不可解释、冷启动无数据</td></tr>
+</table>
+<p><strong>选末次点击，理由要讲清楚</strong>（不是「因为简单」）：①行业默认口径（Microsoft/Apple 均默认 LCA），与媒体账单口径对齐——归因口径必须能和 M3 对账口径互相对上，自定义口径会让对账差异④桶常态化；②AdKernel 的业务初心是「已购保护 + 差异化出价」（M2 策略 R1），转化前最后一次触达是影响决策的最直接证据，末次点击与此业务语义天然一致；③可解释性是实验平台的硬需求——每个归因结果都能用人话讲给广告主听。<strong>末次点击不是错，它只是把功劳记给了最后一个到场的人</strong>；等数据量足够，数据驱动模型是演进方向（M5 之后的路线图话题）。</p>
+
+<h4>口径三要素（每项都要写成配置常量，单点定义）</h4>
+<ul>
+<li><strong>归因窗口</strong>：转化发生前多少天内的点击可参与归因。Microsoft 口径 1 分钟~90 天、默认 30 天。AdKernel 裁剪：<strong>7 天</strong>——电商拉新场景决策周期短，窗口越长稀释效应越强（30 天前的一次点击对今天下单的贡献近乎玄学）；窗口长短是「因果强度」与「归因覆盖率」的权衡，7 天是漏斗参数（funnel.yaml）的一部分，可随实验调整。</li>
+<li><strong>计数口径</strong>：All（每次转化都计，适合购买）vs Unique（只计首次，适合线索）。AdKernel 选 <strong>All</strong>——已购保护策略（R1）需要知道用户的完整购买历史，重复购买正是画像特征 <code>lastConvertTime</code> 要更新的对象。</li>
+<li><strong>无点击兜底</strong>：Last Touch 语义——窗口内无点击时记给最后一次曝光（Microsoft VTC 浏览归因语义）。AdKernel 暂不实现 VTC（模拟器不生成浏览型转化），但在归因引擎里留 <code>ATTRIBUTION_MODE</code> 枚举位——口径演进的接口先行，与 M3 RateLimitGate 同一手法。</li>
+</ul>
+
+<h3>执行：归因匹配流水线</h3>
+<pre><code class="language-text">转化事件到达（transUniqueId 携带 userId + 转化时间 + 转化类型）
+  1. 查点击索引：click:{userId} → ZSet（score=点击时间, member=requestId）
+     （M0 五类记录之「点击记录」——M2 频控同款 ZSet 结构，此处第三次复用）
+  2. 取转化时间前 7 天内、最近一次点击的 requestId
+     窗口内无点击 → 未归因事件（unattributed），单列监控——比例异常=回流断链信号
+  3. 凭 requestId 反查决策记录 → 得到 campaignId / expId / 策略版本
+     （M0 requestId 贯穿在此转动：转化→点击→决策 三级反查，全链路一条线）
+  4. 写归因结果：attribution = {requestId, campaignId, expId, 转化金额, 归因模型, 归因耗时}
+  5. 发布「已归因转化」事件 → 任务2 回流链路的入口</code></pre>
+<div class="callout">
+<b>关键设计：归因日志是不可变事实（immutable fact）。</b>归因结果只追加、不修改——对账（M3）与实验报表（任务 5）都以归因日志为唯一事实源。若归因口径日后调整（如窗口 7 天改 14 天），做法是<strong>重放归因</strong>（replay），生成新版本归因日志，而不是原地改写——历史报表永远可以复现，这是实验平台可信度的底线。
+</div>
+
+<h3>验收预期</h3>
+<ul>
+<li>构造多计划多触点用户序列（A 点击→B 点击→转化）：100% 归因给 B（末次点击语义）；</li>
+<li>窗口边界：6.9 天前的点击归因、7.1 天前不归因，边界精确到秒；</li>
+<li>未归因比例：正常日 &lt; 5%（模拟器漏斗参数控制），超阈值告警（回流断链预警）；</li>
+<li>归因引擎 P99 &lt; 50ms（ZSet 单 key 读写，非决策路径，预算宽松但仍有上限）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>归因口径与媒体账单口径不一致</td><td>对账④桶常态化，差异永远归因不完</td><td>归因模型对齐行业默认（LCA）+ 窗口/计数口径写入单点配置</td></tr>
+<tr><td>点击索引无 TTL 治理</td><td>ZSet 无限膨胀，内存先于业务崩溃</td><td>索引保留期 = 归因窗口 + 对账缓冲（7+2 天），到期驱逐</td></tr>
+<tr><td>归因结果原地可变</td><td>口径调整后历史报表无法复现，实验结论失去公信</td><td>不可变事实 + 版本化重放</td></tr>
+<tr><td>时钟混用</td><td>跨时区/多时钟源下窗口边界漂移</td><td>沿用 M3 规则三：Redis TIME 统一时钟源</td></tr>
+<tr><td>未归因事件无人关注</td><td>回流静默断链数周才被发现</td><td>未归因比例是告警指标而非统计指标</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务2 ============ -->
+<section id="t2">
+<h2><span class="num">02</span>任务2 · 转化回流链路：mini-MQ 上场，回流&lt;5s</h2>
+
+<h3>问题驱动<span class="q">回流为什么是一条独立链路</span></h3>
+<p>归因完成的转化事件需要送达两个下游：特征近线更新（任务 3）和实验指标聚合（任务 5）。三个不能用同步调用解决的理由：①转化到达有<strong>脉冲性</strong>（模拟器漏斗的 cvr 事件在头部用户上高度聚集），同步更新会打穿特征存储；②更新链路故障<strong>绝不能反噬决策主链路</strong>——回流挂了广告照样要投，只是暂时变笨；③实验指标聚合是<strong>天然的可异步累加</strong>计算。需要削峰、解耦、故障隔离——这个需求画像就是消息队列。而项目组合里恰好有一个 mini-MQ：<strong>造了轮子，还造了用轮子的车</strong>（Spec v2 的双项目闭环叙事在本任务落地）。</p>
+
+<h3>决策：回流链路拓扑</h3>
+<pre><code class="language-text">归因引擎 ──发布──▶ mini-MQ topic: conversion-attributed
+                        │
+        ┌───────────────┴───────────────┐
+   consumer: feature-updater      consumer: metrics-aggregator
+   （任务3 近线更新）               （任务5 实验指标累加）
+   独立消费组、独立 lag 告警、独立降级开关（KillSwitch 扩展位）</code></pre>
+<p>两个消费组物理隔离（mini-MQ 的消费组语义），一方积压不拖另一方；<code>metrics-aggregator</code> 只做无状态累加，挂了可重放恢复（消费位点回退），<code>feature-updater</code> 有副作用需幂等（见坑表）。</p>
+
+<h4>回流 &lt; 5s 的端到端分解（简历数字的账本）</h4>
+<table>
+<tr><th>环节</th><th>预算</th><th>说明</th></tr>
+<tr><td>转化回传接收 → 归因完成</td><td>&lt; 100ms</td><td>ZSet 反查 + 记录写入，内存操作</td></tr>
+<tr><td>归因发布 → mini-MQ 可见</td><td>&lt; 1s</td><td>组提交落盘 + 副本同步（mini-MQ M2 ISR 语义的延迟特性）</td></tr>
+<tr><td>broker → consumer 拉取</td><td>&lt; 2s</td><td>消费批量大小与拉取间隔的权衡，回流链路选小批量低延迟模式</td></tr>
+<tr><td>consumer 处理 → 特征更新生效可见</td><td>&lt; 2s</td><td>近线更新写源 + 缓存失效（任务 3 详述）</td></tr>
+<tr><td><strong>合计 P99</strong></td><td><strong>&lt; 5s</strong></td><td>各段 P99 相加偏保守，实测通常更优——简历口径取端到端 P99</td></tr>
+</table>
+
+<h3>执行：回流可靠性治理（M3 对账桶②「丢回传」的事前预防）</h3>
+<p>M3 的对账只能<strong>事后发现</strong>媒体且回传（账单有、我方无）并补偿。M4 在我方内部链路上把可靠性前移：</p>
+<ul>
+<li><strong>发送侧</strong>：归因结果本地 WAL 短暂持久化后再确认发布（mini-MQ 生产者确认语义），发布失败重试三次后落补偿队列——<strong>归因日志是不可变事实</strong>（任务 1），WAL 与它同源；</li>
+<li><strong>消费侧</strong>：幂等消费（transUniqueId 作为去重键——M0 协议字段第四次复用：频控、预算、对账、回流四用），重复投递不产生双重更新；</li>
+<li><strong>终态对齐</strong>：每日对账作业（M3 流水线）新增一桶校验——归因日志条数 = MQ 已消费确认数 + 补偿队列数，回流链路自身的账也要对得上（<strong>审计员也要被审计</strong>）。</li>
+</ul>
+
+<h3>验收预期</h3>
+<ul>
+<li>端到端回流 P99 &lt; 5s（简历数字实验来源），P50 &lt; 2s；</li>
+<li>注入 consumer 宕机 10 分钟：恢复后重放补齐，特征最终一致，无重复更新（幂等验证）；</li>
+<li>注入 MQ 不可用 30 分钟：决策主链路零影响（回流降级模式：转化暂存 WAL，恢复后追赶）；</li>
+<li>五段延迟打点全部上线——M5 可观测的伏笔。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>feature-updater 非幂等</td><td>MQ 重投 → 画像被重复更新（计数型特征翻倍）</td><td>transUniqueId 去重键 + 更新操作设计为幂等（绝对值覆盖而非增量累加，见任务3）</td></tr>
+<tr><td>回流链路故障反噬主链路</td><td>MQ 挂 → 决策接口跟着挂</td><td>发布走异步线程池 + WAL 缓冲，MQ 不可用时决策路径零感知</td></tr>
+<tr><td>消费 lag 无告警</td><td>回流静默延迟到分钟级，「回流&lt;5s」名存实亡</td><td>两组 lag 独立告警阈值（feature 组 30s / metrics 组 5min）</td></tr>
+<tr><td>重放破坏副作用</td><td>位点回退后指标双倍累加</td><td>metrics 侧累加前查去重窗口；feature 侧天然幂等（任务3 设计保证）</td></tr>
+<tr><td>把回流塞进决策线程</td><td>决策 RT 被回流脉冲拖垮</td><td>链路物理分离，仅通过特征存储与指标存储间接交汇</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务3 ============ -->
+<section id="t3">
+<h2><span class="num">03</span>任务3 · 特征近线更新：让画像学会呼吸</h2>
+
+<h3>问题驱动<span class="q">近线（near-line）是什么、为什么不是实时或离线</span></h3>
+<p>M1 的 UserProfile 是投放前预置的静态画像，M2 的策略依赖它做精细化判断——但 <code>lastConvertTime</code>（已购保护 R1 的依据）和 <code>impressionCount7d</code>（频控参数）这些字段的真实语义是<strong>随业务运行持续变化的状态</strong>。更新时机的三档选择：</p>
+<table>
+<tr><th>档位</th><th>延迟</th><th>代价</th><th>问题</th></tr>
+<tr><td>实时（决策路径内同步更新）</td><td>0</td><td>决策路径加写放大</td><td>污染 60ms 预算；画像系统故障直接打挂决策</td></tr>
+<tr><td>离线（T+1 批处理）</td><td>1 天</td><td>最低</td><td>就是 RTA 要取代的「人群包 T+1 痛点」——自废武功</td></tr>
+<tr><td><strong>近线（事件驱动的准实时）✓</strong></td><td>秒级</td><td>中等</td><td>存在短暂的状态滞后（可量化、可接受）</td></tr>
+</table>
+<p><strong>近线是 RTA 叙事的自我一致点</strong>：业务初心的起点就是「T+1 人群包太慢」，自己的特征更新绝不能再退回 T+1。秒级近线 = 比实时便宜、比离线新鲜，延迟由任务 2 的回流链路预算（&lt;5s）统一背书。</p>
+
+<h3>决策：更新语义与失效策略</h3>
+<h4>1. 幂等更新：绝对值覆盖，不做增量累加</h4>
+<pre><code class="language-java">// feature-updater 消费「已归因转化」事件后的更新动作
+// 关键纪律：覆盖式更新（set），不是累加式（incr）—— MQ 重投不产生偏差
+profile.setLastConvertTime(event.convertTime());     // R1 已购保护即刻生效
+profile.setMemberLevel(recompute(event.userId()));   // 按业务规则重算等级
+// impressionCount7d 的滚动窗口另由曝光计数任务维护（见下）</code></pre>
+<p>计数型特征（<code>impressionCount7d</code>）是仅有的增量语义特征，其幂等性由 <strong>requestId 维度去重计数</strong>保证（Redis HyperLogLog 或 Set 去重 + 计数），而非裸 INCR——与 M2 频控的「检查在决策、记录在回传」不同，此处计数的正确性优先于成本。</p>
+
+<h4>2. 缓存失效：让 M1 的三级缓存看见新画像</h4>
+<p>源更新后，L2（Redis 画像缓存）直接删除对应 key（删除而非更新——下次回源自然加载新值，<strong>用 M1 已有的回源机制做同步，不新造同步路径</strong>）；L1（Caffeine）不主动失效——沿用 M1 参数 <code>refreshAfterWrite 15s</code> 的既有语义：最多 15 秒后异步刷新拿到新值。<strong>近线更新的可见延迟 = 回流延迟（&lt;5s）+ L1 刷新窗口（&lt;15s），合计 P99 &lt; 20s</strong>——对「7 天内已购保护」这种粒度的业务语义，20 秒的收敛时间完全无感，这个「不需要更快的理由」是面试的加分回答。</p>
+
+<h4>3. 更新风暴防御：头部用户的写入脉冲</h4>
+<p>幂律流量下转化同样幂律集中（M0 设计的既定事实），头部用户的特征更新是高频小事务。防御三层：①更新按 userId 哈希分片到多 updater 并行消费；②同用户短窗口内多条事件合并更新（500ms 微窗口聚合，重复覆盖天然无害——幂等语义的红利）；③特征源写入走异步批量缓冲，背压时丢弃的是<strong>更新时效</strong>而非更新正确性（下一次覆盖更新自愈）。</p>
+
+<h3>验收预期</h3>
+<ul>
+<li>转化 → 策略生效端到端：P99 &lt; 20s（回流 5s + L1 刷新 15s），模拟器断言「已购用户在转化后 20s 内的新决策 100% 被策略 R1 拒绝」；</li>
+<li>MQ 重放 3 次同一事件：<code>lastConvertTime</code> 等覆盖型特征零变化，计数型特征零偏差（幂等验证）；</li>
+<li>特征源写入 P99 &lt; 10ms，头部用户聚合后写入 QPS 可控（无脉冲穿透）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>累加式更新 + MQ 重投</td><td>画像计数翻倍，策略误判</td><td>覆盖式幂等更新；计数特征 requestId 去重</td></tr>
+<tr><td>更新直接穿透缓存（双写 L1+L2）</td><td>为同步另造一条路径，缓存一致性 bug 制造机</td><td>只失效 L2、依赖 L1 既有刷新机制</td></tr>
+<tr><td>近线链路反过来卡决策</td><td>特征源写入慢 → 回流堆积 → 拖垮消费</td><td>更新异步批量 + 背压降时效不降正确性</td></tr>
+<tr><td>更新无审计</td><td>画像突变无法归因（哪次事件改的）</td><td>更新日志与归因日志同 requestId 串联</td></tr>
+<tr><td>为 20s 收敛再上实时链路</td><td>复杂度翻倍，业务收益为零</td><td>说清「不需要更快」：7 天粒度的业务语义对 20s 无感</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务4 ============ -->
+<section id="t4">
+<h2><span class="num">04</span>任务4 · AB 实验分桶：M2 灰度的升级与正名</h2>
+
+<h3>问题驱动<span class="q">从「5% 灰度」到「实验平台」差的是什么</span></h3>
+<p>M2 的策略热更新带着 userId 哈希 5% 灰度——但灰度只回答「新版本安不安全」，不回答「新版本好不好」。差的正是<strong>分流基础设施的系统性设计</strong>：分桶必须无偏、可重复、可并行、可校验。四条硬要求推导出分桶平台：①同一用户永远进同一组（决策一致性，否则同一用户策略反复横跳）；②分桶结果只由 (userId, 实验) 决定，可离线复算（审计）；③多实验并行互不污染；④分完能证明「分得均匀」（不然一切对比都是自我安慰）。</p>
+
+<h3>决策一：一致性哈希分桶（MurmurHash + salt）</h3>
+<pre><code class="language-java">/**
+ * 分桶：userId + salt(experimentId) → MurmurHash3 → [0, 1000) 桶号
+ * - user_id 必须稳定（M0 协议 userId 即登录 ID，天然满足）
+ * - experimentId 参与 salt：多实验间天然隔离，无偏可复算
+ * - MurmurHash 而非 MD5：均匀性相当、开销低一个量级（动态雷达实证）
+ */
+static int bucket(String userId, String experimentId) {
+    byte[] key = (experimentId + ":" + userId).getBytes(UTF_8);
+    int hash = Hashing.murmur3_32_fixed().hashBytes(key).asInt();
+    return (hash & Integer.MAX_VALUE) % 1000;   // 桶号 0~999
+}
+// exp001「RTA vs 人群包」: 桶 0-499 → 对照组, 500-999 → 实验组（各 50%）
+// M2 的「哈希 5% 灰度」即本函数在桶区间 [0, 49] 上的特例——灰度是分桶的子集</code></pre>
+
+<h3>决策二：互斥还是正交——广告实验的答案与通用结论相反</h3>
+<p>通用 AB 平台方法论是「正交分层」：不同实验作用于不同业务环节，各自成层、salt 隔离、同用户可多层并行（流量复用率高）。但广告场景有特殊性（动态雷达 CSDN 实证明确点名）：<strong>广告位/预算是稀缺竞争资源，作用于同一资源池的实验互为干扰</strong>——两个策略实验同时抢同一批曝光，指标差异反映的是「混战中抢到的量」而非策略本身的优劣。AdKernel 的裁剪：</p>
+<table>
+<tr><th>实验域</th><th>关系</th><th>理由</th></tr>
+<tr><td>exp001：RTA vs 人群包（同一计划的两种模式）</td><td><strong>互斥</strong>（用户分流）</td><td>同一用户要么走 RTA 决策要么走人群包，绝无叠加——对照组的纯净性是实验成立的前提</td></tr>
+<tr><td>exp002：计划级策略变体（未来：出价策略迭代）</td><td>与 exp001 <strong>正交分层</strong></td><td>作用环节不同（exp001 是决策模式，exp002 是策略参数），层间 salt 隔离（exp001 / exp002 各为 salt），可并行</td></tr>
+</table>
+<p>「互斥保证纯净、正交提升效率」——同一套分桶函数，两层实验域，这就是分层正交的最小完整实现；未来新实验按「是否作用于同一资源池」进互斥域或正交层。</p>
+
+<h3>决策三：分桶质量的自我证明（AA 校验 + SRM 检测）</h3>
+<ul>
+<li><strong>AA 测试</strong>：正式实验前，两组跑完全相同的策略（A vs A），对比北极星指标——差异应不显著。不显著才能证明「分桶本身无偏」，实验的对照组才可信；</li>
+<li><strong>SRM 检测</strong>（Sample Ratio Mismatch）：运行期持续校验两组流量占比是否偏离设计比例（50/50），χ² 检验。SRM 触发 = 分流被什么东西污染了（如实验中途改配置、哈希输入不稳定），<strong>此时一切指标对比作废，先修分流再谈效果</strong>；</li>
+<li><strong>expId 全链路透传</strong>：分桶结果写入决策请求上下文（M2 预留的 expId 字段），决策/曝光/转化/归因全链路携带——报表按 expId 自动分组，无人工标记环节（消除「实验组数据缺失」这类经典事故）。</li>
+</ul>
+
+<h3>验收预期</h3>
+<ul>
+<li>分桶均匀性：AA 测试 7 天，两组北极星指标差异不显著（p &gt; 0.05）——分桶无偏的证据；</li>
+<li>一致性：同一 userId 十万次分桶结果 100% 相同；离线复算与线上分组零偏差；</li>
+<li>SRM 陪跑：正常日 SRM 零告警；注入「中途改流量比例」故障，SRM 检测在 1 小时内报警；</li>
+<li>M2 灰度迁移：策略热更新的 5% 灰度改走分桶平台（同一函数），行为零变化——基础设施统一完成。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>用随机数分桶</td><td>同一用户反复换组，决策不一致，样本自污染</td><td>确定性哈希：结果只由 (userId, experimentId) 决定</td></tr>
+<tr><td>experimentId 不参与哈希</td><td>多实验用户重叠相关性极高，互染</td><td>experimentId 做 salt；跨层再换层 salt</td></tr>
+<tr><td>不做 AA 直接开 AB</td><td>对照组本身有偏，结论从第一天起不可信</td><td>AA 通过是 AB 的准入门槛（先证分桶无偏，再证策略有效）</td></tr>
+<tr><td>忽略 SRM</td><td>流量 52/48 也硬跑，一切对比自我安慰</td><td>SRM 常态化检测，触发即熔断实验读数</td></tr>
+<tr><td>稀缺资源实验用正交</td><td>两个策略实验抢同一预算池，结论是混战结果</td><td>同资源池实验进互斥域；不同环节才进正交层</td></tr>
+<tr><td>分桶配置中途修改</td><td>用户换组，前后数据不可比</td><td>实验配置冻结是纪律；确需调整 = 重新开实验（新 experimentId）</td></tr>
+</table>
+</section>
+
+<!-- ============ 任务5 ============ -->
+<section id="t5">
+<h2><span class="num">05</span>任务5 · RTA vs 人群包对照实验：CPA 12% 的诞生</h2>
+
+<h3>问题驱动<span class="q">项目的价值证明闭环到最后一环</span></h3>
+<p>Spec v2 的业务初心叙事表要求「有效性证明」：RTA 比人群包好在哪、好多少、你凭什么信？这是 M0 就立下的军令状，也是简历 bullet「CPA 12%」的实验来源。没有这个实验，AdKernel 讲得再好也只是「我实现了」而不是「它有效」——<strong>这是整个项目从工程叙事升维到业务叙事的验收节点。</strong></p>
+
+<h3>决策：实验设计五要素</h3>
+<table>
+<tr><th>要素</th><th>AdKernel 设计</th><th>依据</th></tr>
+<tr><td><strong>假设</strong></td><td>RTA 毫秒级个性化决策降低已购误投、提升出价精准度 → CPA 下降</td><td>M0 业务初心叙事链</td></tr>
+<tr><td><strong>分桶</strong></td><td>exp001 互斥分流 50/50，两组除决策模式外一切同构</td><td>任务 4 分桶平台</td></tr>
+<tr><td><strong>北极星指标</strong></td><td>CPA = 计划消耗 / 归因转化数</td><td>广告主的终极问题就是「一个转化多少钱」</td></tr>
+<tr><td><strong>护栏指标</strong></td><td>两组花费偏差 &lt; 5%（M3 pacing 收线）、决策 P99 无劣化、SRM 不触发</td><td>花费不公平的对比没有意义——成本侧公平性先行</td></tr>
+<tr><td><strong>诊断指标</strong></td><td>reason 码分布（R1 已购拒绝占比）、bidRatio 分布、未归因率</td><td>解释「为什么实验组 CPA 更低」——M2 reason 码伏笔收线</td></tr>
+</table>
+
+<h4>对照组定义：人群包模式 = M3 KillSwitch L1 的正向复用</h4>
+<p>对照组跑的正是 M3 降级总开关的 L1 模式（预计算人群包直接决策）——<strong>降级模式的正向价值：它不仅是故障兜底，还是实验基准</strong>。同一套代码，开关切在 L1 就是对照组、切在 L0 就是实验组，保证两组除决策模式外的一切（限流、预算、pacing、对账）完全同构——单一变量原则的工程化保证。</p>
+
+<h3>执行：统计口径与结论纪律</h3>
+<ul>
+<li><strong>样本量先行</strong>：按基线 CPA、α=0.05、统计功效 0.8、预期最小可感知效果（MDE≈8%）反推最小样本量，样本不足不开实验（「样本量不够，p 值毫无意义」）；</li>
+<li><strong>周期覆盖完整周</strong>：至少 7 天，覆盖工作日/周末流量形态差异（动态雷达行业共识）；</li>
+<li><strong>固定 horizon</strong>：预设 7 天读数一次，不天天偷看——频繁看结果会严重高估效果（多重检验问题）；</li>
+<li><strong>结论格式</strong>：不止报 p 值，报效果区间（CI）——「CPA 下降 12% [置信区间 7%~17%], p&lt;0.01, n=xx 万决策」；统计显著之外给出<strong>商业显著</strong>的一句话（按当前预算规模，年化节省多少）。</li>
+</ul>
+
+<h3>验收预期与「CPA 12%」的数字纪律</h3>
+<ul>
+<li>实验组 CPA 相对下降 <strong>≈12%</strong>（funnel.yaml 参数化设计使该结果可复现且非作弊——两组用户面对<strong>相同</strong>的转化概率分布，差异全部来自决策策略本身，M0 防作弊设计在此收线）；</li>
+<li>护栏全绿：花费偏差 &lt; 5%、SRM 零触发、两组决策 P99 差 &lt; 1ms（实验组多跑策略引擎但缓存命中下成本可控）；</li>
+<li>诊断链完整：任一 CPA 差异都能下钻到 reason 码层面（如「实验组 R1 拒绝率 18% vs 对照组 0——已购误投的消除即下降来源」）；</li>
+<li><strong>简历数字的诚实口径</strong>：12% 是模拟器漏斗参数下的实验结论——简历写作时必须能说清「模拟环境的对照实验」，绝不含糊其辞为「线上优化 12%」（面试诚实性红线，也是追问时的加分坦诚）。</li>
+</ul>
+
+<h3>坑速查表</h3>
+<table>
+<tr><th>坑</th><th>症状</th><th>药方</th></tr>
+<tr><td>两组预算/流量不同构</td><td>CPA 差异其实是成本投入差异</td><td>护栏指标：花费偏差 &lt; 5% 否则实验读数熔断</td></tr>
+<tr><td>样本不足硬跑</td><td>p 值抖动，方向说变就变</td><td>样本量公式先行，不足则延长或放弃</td></tr>
+<tr><td>天天看数早停</td><td>高估效果（多重检验），全量后打脸</td><td>固定 horizon + α 消耗纪律</td></tr>
+<tr><td>只报 p 值不报区间</td><td>「显著」掩盖了效果幅度的不确定性</td><td>结论必须带 CI 与 MDE 对照</td></tr>
+<tr><td>把模拟数字说成线上数字</td><td>面试追问三句露馅，诚信崩盘</td><td>口径主动讲清「模拟环境对照实验」，数字可复现反而成加分项</td></tr>
+<tr><td>实验做完无沉淀</td><td>结论无人负责，平台沦为摆设</td><td>实验报告归档 + 结论进 ADR（Spec v2 的 ADR 通道）</td></tr>
+</table>
+</section>
+
+<!-- ============ 速览卡 ============ -->
+<section id="cards">
+<h2><span class="num">06</span>三张速览卡</h2>
+
+<div class="card-grid">
+<div class="card blue">
+<div class="card-t">卡1 · 归因口径速查</div>
+<ul>
+<li><strong>模型</strong>：末次点击（LCA）——Microsoft/Apple 行业默认，对齐账单口径、可解释、与已购保护业务语义一致</li>
+<li><strong>窗口</strong>：7 天（行业默认 30 天的裁剪：电商拉新决策周期短，窗口越长稀释越强）</li>
+<li><strong>计数</strong>：All（每次转化都计，购买语义）而非 Unique</li>
+<li><strong>匹配链</strong>：transUniqueId → click ZSet（7 天）→ requestId 反查决策 → 归因日志（不可变事实，口径调整走版本化重放）</li>
+<li><strong>未归因率</strong>：&lt;5% 是告警线不是统计线——回流断链的哨兵</li>
+</ul>
+</div>
+<div class="card green">
+<div class="card-t">卡2 · 回流链路与近线更新</div>
+<ul>
+<li><strong>拓扑</strong>：归因 → mini-MQ → 双消费组（特征更新 / 指标聚合），物理隔离、独立 lag 告警</li>
+<li><strong>&lt;5s 五段账</strong>：归因 0.1s + MQ 发布 1s + 消费 2s + 更新生效 2s</li>
+<li><strong>近线定位</strong>：比实时便宜、比离线新鲜；T+1 更新 = 自废 RTA 武功</li>
+<li><strong>幂等纪律</strong>：覆盖式更新（set 非 incr）；计数特征 requestId 去重</li>
+<li><strong>可见延迟</strong>：回流 5s + L1 刷新 15s ≈ P99 20s——7 天粒度业务对 20s 无感（「不需要更快」是加分回答）</li>
+</ul>
+</div>
+<div class="card amber">
+<div class="card-t">卡3 · 实验设计三件套</div>
+<ul>
+<li><strong>分桶</strong>：MurmurHash3(userId, salt=experimentId) % 1000，确定性可复算；互斥（同资源池/强感知）vs 正交（不同环节、salt 隔离）</li>
+<li><strong>准入</strong>：AA 测试通过才开 AB（先证分桶无偏）；SRM 常态检测（触发即熔断读数）</li>
+<li><strong>指标三分层</strong>：北极星（CPA）/ 护栏（花费偏差、SRM、P99）/ 诊断（reason 码分布）</li>
+<li><strong>结论纪律</strong>：样本量先行（α=0.05, power=0.8, MDE 8%）+ 固定 horizon + 报 CI 不只报 p</li>
+<li><strong>对照组复用</strong>：人群包模式 = KillSwitch L1 的正向价值——降级即基准</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ============ 动态雷达 ============ -->
+<section id="radar">
+<h2><span class="num">07</span>动态雷达（2026 实证调研）</h2>
+
+<div class="radar-item">
+<div class="rt"><a href="https://ads.apple.com/cn/help/attribution/0093-adattributionkit-to-measure-performance" target="_blank">AdAttributionKit 衡量广告效果（Apple Ads 官方文档）</a></div>
+<p>苹果官方归因机制：点击转化归因于用户最后点击的广告（末次点击）；多广告网络参与时按最后已知的可归因交互兜底；隐私阈值限制回传数据量。</p>
+<p class="adopt">采纳：末次点击作为默认口径的权威背书；「多触点按最后可归因交互兜底」进任务 1 匹配链设计。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://learn.microsoft.com/en-us/answers/questions/2289412/do-revenue-and-conversions-report-based-on-last-cl" target="_blank">Last Click Attribution 与转化窗口（Microsoft Advertising 官方问答）</a></div>
+<p>微软广告明确采用 LCA 默认口径；转化窗口 1 分钟~90 天、默认 30 天；计数 All / Unique 两口径；无点击时 VTC 浏览归因兜底（Last Touch）。</p>
+<p class="adopt">采纳：窗口/计数/兜底三要素全部成为任务 1 的配置项——30 天默认值与我们的 7 天裁剪形成「参数裁剪有理由」的叙事对照。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://m.sohu.com/a/1088191276_122713436/" target="_blank">广告投放全链路归因系统怎么选：先看清这三件事（智云精准，2026-10）</a></div>
+<p>归因要回答三问：口径（部门间同词不同义）、功劳（末次 vs 数据驱动）、成本（表面 CPA vs 有效 CPA）；「末次点击不是错，它只是把功劳记给了最后一个到场的人」。</p>
+<p class="adopt">采纳：任务 1 开头的归因三问框架与「先定口径再写代码」的顺序；数据驱动列为演进方向。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://blog.csdn.net/weixin_30898555/article/details/167655676" target="_blank">正交实验与互斥实验：AB 测试分流架构的核心原理（CSDN，2026-10）</a></div>
+<p>互斥解决「资源竞争与感知干扰」（点名广告位是典型稀缺资源）；正交解决「不同环节多实验并行」；层间独立性是正交成立的前提；spillover 溢出效应打破独立假设。</p>
+<p class="adopt">采纳：任务 4 的互斥/正交分域论证——广告实验互斥是本册与通用 AB 方法论的关键差异点，面试反直觉加分位。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="http://m.toutiao.com/group/7654226160322118180/?upstream_biz=VolcEngine" target="_blank">电商多阶段转化率的 A/B 测试实时数据分析平台（VolcEngine 生态实践）</a></div>
+<p>MurmurHash3 分桶工程细节：userId → hash → mod 1000 桶；分桶验证三件套 χ² 均匀性 + AA 测试 + SRM 检测；正交分层 salt 隔离；新客/老客分层先行。</p>
+<p class="adopt">采纳：任务 4 分桶函数与校验三件套直接对齐；1000 桶粒度沿用。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://developer.aliyun.com/article/1711231" target="_blank">别再拍脑袋上线了：把 A/B 测试和实验平台干正经（阿里云开发者社区，2026-02）</a></div>
+<p>「样本量不够 p 值毫无意义」「频繁看结果严重高估效果」「统计显著 ≠ 商业显著」；指标必须三层（北极星/护栏/诊断）；结论要带效果区间与 MDE。</p>
+<p class="adopt">采纳：任务 5 统计纪律全清单；「没有护栏指标的实验本质是赌博」进护栏指标设计依据。</p>
+</div>
+<div class="radar-item">
+<div class="rt"><a href="https://www.besthub.dev/articles/mastering-gray-releases-and-a-b-testing-strategies-code-and-analytics-6a8fda38c488" target="_blank">Mastering Gray Releases and A/B Testing（Java 工程实践，2026-01）</a></div>
+<p>Java MurmurHash3 分桶完整实现（layerId 作 salt）；AA 校验先于正式实验；实验至少跑一周覆盖工作日与周末。</p>
+<p class="adopt">采纳：任务 4 分桶代码范本（Guava Hashing.murmur3_32_fixed）；7 天实验周期依据。</p>
+</div>
+</section>
+
+<!-- ============ DoD ============ -->
+<section id="dod">
+<h2><span class="num">08</span>DoD 验收清单</h2>
+<p>勾选自动保存到浏览器本地存储（localStorage key: <code>adkernel-m4-dod-v1</code>），刷新不丢。</p>
+
+<div class="dod-item"><input type="checkbox" id="dod1"><label for="dod1">归因引擎上线：末次点击 + 7 天窗口 + All 计数，口径三要素单点配置；多触点序列 100% 归因给末次点击，窗口边界精确到秒<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod2"><label for="dod2">未归因率监控：正常日 &lt; 5%，超阈值告警；归因日志不可变 + 版本化重放机制就绪<span class="tag">任务1</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod3"><label for="dod3">回流链路接通 mini-MQ：双消费组物理隔离、独立 lag 告警；端到端回流 P99 &lt; 5s，五段延迟打点全上线<span class="tag">任务2·简历数字</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod4"><label for="dod4">回流可靠性三防线：发布侧 WAL+重试+补偿队列、消费侧 transUniqueId 幂等、每日终态对账（归因数=消费确认数+补偿数）<span class="tag">任务2</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod5"><label for="dod5">混沌验证：consumer 宕机 10 分钟重放补齐无重复更新；MQ 不可用 30 分钟决策主链路零影响<span class="tag">任务2</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod6"><label for="dod6">特征近线更新：覆盖式幂等更新 + 计数特征 requestId 去重 + L2 删除失效/L1 既有刷新；转化→策略生效 P99 &lt; 20s（模拟器断言 R1 生效）<span class="tag">任务3</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod7"><label for="dod7">分桶平台落地：MurmurHash+salt 一致性分桶（同用户十万次零变组、离线复算零偏差）；M2 的 5% 灰度迁移至分桶平台行为零变化<span class="tag">任务4</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod8"><label for="dod8">互斥/正交分域：exp001 互斥 50/50，exp002 正交层 salt 隔离；expId 决策→归因全链路透传，报表自动分组<span class="tag">任务4</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod9"><label for="dod9">AA 校验 7 天通过（p &gt; 0.05）+ SRM 常态检测上线；注入中途改配置故障，SRM 1 小时内报警<span class="tag">任务4</span></label></div>
+<div class="dod-item"><input type="checkbox" id="dod10"><label for="dod10">exp001 对照实验完成：CPA 下降 ≈12%（带 CI 与 p 值）、护栏全绿（花费偏差 &lt; 5% / P99 差 &lt; 1ms / SRM 零触发）、诊断链可下钻到 reason 码；实验报告归档 + 结论进 ADR<span class="tag">任务5·简历数字</span></label></div>
+</section>
+
+<!-- ============ 参考 ============ -->
+<section id="refs">
+<h2><span class="num">09</span>参考与来源</h2>
+<ul class="src-list">
+<li><a href="https://ads.apple.com/cn/help/attribution/0093-adattributionkit-to-measure-performance" target="_blank">AdAttributionKit 衡量 app 广告效果 — Apple Ads 官方文档</a></li>
+<li><a href="https://learn.microsoft.com/en-us/answers/questions/2289412/do-revenue-and-conversions-report-based-on-last-cl" target="_blank">Last Click Attribution / Conversion Window — Microsoft Advertising 官方问答</a></li>
+<li><a href="https://experienceleague.adobe.com/zh-hans/docs/advertising/search-social-commerce/new-ui/goals/conversions/enhanced-conversions/conversion-action-google-create" target="_blank">转化操作与归因模型设置 — Adobe Advertising（Google Ads 增强型转化）</a></li>
+<li><a href="https://m.sohu.com/a/1088191276_122713436/" target="_blank">广告投放全链路归因系统怎么选：先看清这三件事 — 智云精准（2026-10）</a></li>
+<li><a href="https://blog.csdn.net/weixin_30898555/article/details/167655676" target="_blank">正交实验与互斥实验：AB 测试分流架构的核心原理与工程实践 — CSDN（2026-10）</a></li>
+<li><a href="http://m.toutiao.com/group/7654226160322118180/?upstream_biz=VolcEngine" target="_blank">电商多阶段转化率的 A/B 测试实时数据分析平台 — VolcEngine 生态实践</a></li>
+<li><a href="https://developer.aliyun.com/article/1711231" target="_blank">别再拍脑袋上线了：把 A/B 测试和在线实验平台这件事干正经 — 阿里云开发者社区（2026-02）</a></li>
+<li><a href="https://www.besthub.dev/articles/mastering-gray-releases-and-a-b-testing-strategies-code-and-analytics-6a8fda38c488" target="_blank">Mastering Gray Releases and A/B Testing — BestHub（2026-01）</a></li>
+</ul>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+// ---------- DoD 勾选持久化 ----------
+(function () {
+  var KEY = 'adkernel-m4-dod-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+  document.querySelectorAll('.dod-item input[type=checkbox]').forEach(function (cb) {
+    var id = cb.id;
+    cb.checked = !!saved[id];
+    cb.closest('.dod-item').classList.toggle('done', cb.checked);
+    cb.addEventListener('change', function () {
+      saved[id] = cb.checked;
+      cb.closest('.dod-item').classList.toggle('done', cb.checked);
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+})();
+
+// ---------- 侧栏滚动高亮 ----------
+(function () {
+  var links = document.querySelectorAll('nav.sidebar a[href^="#"]');
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var sections = document.querySelectorAll('main section[id]');
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        var a = map[en.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(function (s) { observer.observe(s); });
+})();
+</script>
+</body>
+</html>
