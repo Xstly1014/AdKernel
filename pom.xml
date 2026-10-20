@@ -13,6 +13,7 @@
 
   <modules>
     <module>adkernel-common</module>
+    <module>adkernel-feature</module>
     <module>adkernel-rta</module>
     <module>media-simulator</module>
   </modules>

@@ -2,9 +2,10 @@
 endpoints:
   decisionUrl: http://127.0.0.1:9100/api/rta/decision
   eventUrl: http://127.0.0.1:9100/api/event
+  featureAdminUrl: http://127.0.0.1:9200/internal   # 特征服务观测/注入通道（M1 协议 04）
 
 userPool:
-  size: 100000     # 用户池规模（M1 特征库将预置 50 万，届时同步调大）
+  size: 500000     # M1 特征库 50 万已就位（L1=10万 按 50万×热头20% 反推，池必须同步调大）
   zipfS: 0.86      # Zipf 指数：s=1.0 纯 Zipf 的 Top20%≈87%，取 0.86 校准到 ≈80%（k06 口径）
   fakeRatio: 0.10  # 伪造 ID 比例（与真实 ID 同格式，服务端不可区分；M1 防穿透靶子）
 

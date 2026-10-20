@@ -12,7 +12,7 @@ public record AppConfig(
         int clientTimeoutMs,   // 媒体侧超时预算（红线 60ms：超时按媒体默认策略处理=不参竞）
         String dataDir         // 运行产出根目录（相对 CWD）
 ) {
-    public record Endpoints(String decisionUrl, String eventUrl) {}
+    public record Endpoints(String decisionUrl, String eventUrl, String featureAdminUrl) {}
 
     /** 用户池：规模 + Zipf 幂律指数 + 伪造 ID 比例（M1 防穿透靶子） */
     public record UserPoolCfg(int size, double zipfS, double fakeRatio) {}

@@ -23,6 +23,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- L1 本地缓存：W-TinyLFU（频率素描匹配幂律流量）+ refreshAfterWrite（stale 兜底）+ recordStats -->
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.adkernel</groupId>
       <artifactId>adkernel-common</artifactId>

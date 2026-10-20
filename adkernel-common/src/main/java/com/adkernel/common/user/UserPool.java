@@ -1,10 +1,7 @@
 package com.adkernel.common.user;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 确定性用户池——模拟世界的"真值"（ground truth）。
@@ -38,7 +35,7 @@ public final class UserPool {
     this.known = new HashSet<>(size * 2);
     Set<String> black = new HashSet<>(size / BLACKLIST_MOD + 1);
     for (int i = 0; i < size; i++) {
-      String id = "u-" + sha256Hex12("adkernel|user|" + i);
+      String id = UserIds.userId(i);
       userIds[i] = id;
       known.add(id);
       if (i % BLACKLIST_MOD == 0) {
@@ -72,25 +69,6 @@ public final class UserPool {
 
   /** 生成一个与真实 ID 同格式的伪造用户 ID（服务端不可区分；生成方自行标记 isFake） */
   public static String fakeUserId() {
-    return "u-" + randomHex12();
-  }
-
-  private static String sha256Hex12(String input) {
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-      StringBuilder sb = new StringBuilder(12);
-      for (int i = 0; i < 6; i++) {
-        sb.append(String.format("%02x", digest[i]));
-      }
-      return sb.toString();
-    } catch (Exception e) {
-      throw new IllegalStateException("sha-256 unavailable", e);
-    }
-  }
-
-  private static String randomHex12() {
-    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-    return String.format("%012x", rnd.nextLong() & 0xFFFFFFFFFFFFL);
+    return UserIds.fakeUserId();
   }
 }

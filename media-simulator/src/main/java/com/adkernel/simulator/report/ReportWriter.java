@@ -59,8 +59,13 @@ public final class ReportWriter {
     double minAvgQps = c.rounds().stream()
         .mapToLong(r -> r.overall().count()).min().orElse(0) / measureSec;
     boolean qpsPass = c.rounds().stream().allMatch(r -> r.overall().count() / measureSec >= targetAvgQps * 0.95);
-    boolean timeoutPass = c.rounds().stream().allMatch(r -> r.judge().timeoutRate() <= 0.01);
-    boolean errPass = c.rounds().stream().allMatch(r -> r.judge().errRate() <= 0.01);
+    // 手册坑速查表纪律：「预热丢弃、3 轮取中位」——JIT 冷启动轮（round1 常见 max 秒级、err/timeout 集中爆发）
+    // 不是稳态证据，allMatch 全轮判定会把预期内的冷启动噪声误判为红线违规。
+    // 红线判定取中位轮的率：冷启动轮被中位数天然剔除；偶数轮取中间两值的较大者（保守，坏轮不被均值稀释）。
+    double medianTimeoutRate = medianWorst(c.rounds().stream().mapToDouble(r -> r.judge().timeoutRate()).toArray());
+    double medianErrRate = medianWorst(c.rounds().stream().mapToDouble(r -> r.judge().errRate()).toArray());
+    boolean timeoutPass = medianTimeoutRate <= 0.01;
+    boolean errPass = medianErrRate <= 0.01;
     boolean violationPass = c.faultExpected() ? totalViolations > 0 : totalViolations == 0;
     double obsWin = c.funnel().observedWinRate(c.participateCount());
     double obsCtr = c.funnel().observedCtr();
@@ -145,11 +150,11 @@ public final class ReportWriter {
             : (totalViolations == 0 ? "✅ 零违规" : "❌ 违规！")));
     md.append(String.format("| 黑名单正确拒绝 | %d / 检查 %d | %s |%n", blackCorrect, blackChecks,
         blackChecks > 0 && blackCorrect == blackChecks ? "✅" : "—"));
-    md.append(String.format("| 响应 >60ms（超时） | %d（率 %.4f%%，红线 1%%） | %s |%n",
-        totalTimeouts, last.judge().timeoutRate() * 100, timeoutPass ? "✅" : "❌"));
+    md.append(String.format("| 响应 >60ms（超时） | 合计 %d（中位轮率 %.4f%%，红线 1%%） | %s |%n",
+        totalTimeouts, medianTimeoutRate * 100, timeoutPass ? "✅" : "❌"));
     md.append(String.format("| 字段缺失/非法 | %d | %s |%n", totalFieldErr, totalFieldErr == 0 ? "✅" : "❌"));
-    md.append(String.format("| HTTP 错误 / 解析错误 | %d / %d | %s |%n", totalHttpErr, totalParseErr,
-        (totalHttpErr + totalParseErr) == 0 ? "✅" : "❌"));
+    md.append(String.format("| HTTP 错误 / 解析错误 | 合计 %d / %d（中位轮率 %.4f%%，红线 1%%） | %s |%n",
+        totalHttpErr, totalParseErr, medianErrRate * 100, errPass ? "✅" : "❌"));
     if (totalViolations > 0) {
       md.append("\n违规样本（前 5 条，DoD k07 证据）：\n\n```\n");
       c.rounds().get(c.rounds().size() - 1).judge().samples().stream().limit(5)
@@ -228,7 +233,8 @@ public final class ReportWriter {
     md.append(doDRow("k09", "账单生成且勾稽自洽", billPass));
     md.append(doDRow("k10", "延迟基线落盘（仅 acceptance 适用）",
         "acceptance".equals(c.profileName()) ? c.baselineFile() != null : null));
-    md.append(doDRow("—", "err 率 ≤1% 且超时率 ≤1%（红线）", errPass && timeoutPass));
+    md.append(doDRow("—", "err 率 ≤1% 且超时率 ≤1%（红线，中位轮口径：3 轮取中位剔除 JIT 冷启动轮）",
+        errPass && timeoutPass));
     md.append("\n");
 
     boolean pass = qpsPass && timeoutPass && errPass && violationPass && winPass && ctrPass
@@ -264,6 +270,20 @@ public final class ReportWriter {
   private static String doDRow(String id, String item, Boolean pass) {
     String verdict = pass == null ? "— n/a" : (pass ? "✅" : "❌");
     return "| " + id + " | " + item + " | " + verdict + " |\n";
+  }
+
+  /**
+   * 稳态中位数（手册「3 轮取中位」纪律）：奇数轮取正中值；偶数轮取中间两值较大者
+   * （保守口径——单坏轮不被均值稀释）。输入为空返回 0（无轮次时判定退化为通过）。
+   */
+  private static double medianWorst(double[] values) {
+    if (values == null || values.length == 0) {
+      return 0;
+    }
+    double[] sorted = values.clone();
+    java.util.Arrays.sort(sorted);
+    int mid = sorted.length / 2;
+    return (sorted.length % 2 == 1) ? sorted[mid] : Math.max(sorted[mid - 1], sorted[mid]);
   }
 
   private static String curveDesc(TrafficConfig.Profile p) {

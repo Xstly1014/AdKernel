@@ -23,16 +23,30 @@ public final class AuthChecker {
     try (RtaClient client = new RtaClient(2_000)) {
       String url = cfg.endpoints().decisionUrl();
       String secret = cfg.auth().secretKey();
-      String userId = "u-authcheck0001";
+      // M1：合法请求须来自画像池内真实用户（i=1：非黑名单、有画像），伪造 ID 会被布隆拦成 no_profile
+      String userId = com.adkernel.common.user.UserIds.userId(1);
 
-      // ① 合法请求
+      // ① 合法请求（两次：冷请求断言鉴权契约 200/code0——M1 语义允许首载降级 no_profile；
+      // 异步装载在 100ms RPC 硬超时内完成并回填 L1，第二次断言 L1 命中 + 决策参竞）
       long now = System.currentTimeMillis();
       String rid = "req-" + UUID.randomUUID();
       String sign = HmacSigner.sign(rid, now, userId, secret);
       RtaRequest valid = new RtaRequest(rid, now, "cmp-001", userId, "slot-feed-1001", "feed", sign);
       ApiResult r1 = client.postJson(url, valid);
       RtaResponse b1 = client.parseDecision(r1);
-      boolean p1 = r1.httpOk() && b1 != null && b1.code() == 0 && b1.target();
+      boolean p1a = r1.httpOk() && b1 != null && b1.code() == 0;
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
+      long now2 = System.currentTimeMillis();
+      String rid2 = "req-" + UUID.randomUUID();
+      String sign2 = HmacSigner.sign(rid2, now2, userId, secret);
+      RtaRequest valid2 = new RtaRequest(rid2, now2, "cmp-001", userId, "slot-feed-1001", "feed", sign2);
+      ApiResult r1b = client.postJson(url, valid2);
+      RtaResponse b1b = client.parseDecision(r1b);
+      boolean p1 = p1a && r1b.httpOk() && b1b != null && b1b.code() == 0 && b1b.target();
 
       // ② 篡改签名（正确签名末位翻转）
       String tampered = flipLastHex(sign);
@@ -58,8 +72,11 @@ public final class AuthChecker {
       RtaResponse b4 = client.parseDecision(r4);
       boolean p4 = r4.status() == 400 && b4 != null && b4.code() == RtaResponse.CODE_BAD_FIELD;
 
-      System.out.printf("[authcheck] valid        -> http=%d code=%s target=%s : %s%n",
-          r1.status(), b1 == null ? "-" : b1.code(), b1 == null ? "-" : b1.target(), p1 ? "PASS" : "FAIL");
+      System.out.printf("[authcheck] valid(cold)  -> http=%d code=%s target=%s : %s%n",
+          r1.status(), b1 == null ? "-" : b1.code(), b1 == null ? "-" : b1.target(), p1a ? "PASS" : "FAIL");
+      System.out.printf("[authcheck] valid(warm)  -> http=%d code=%s target=%s : %s%n",
+          r1b.status(), b1b == null ? "-" : b1b.code(), b1b == null ? "-" : b1b.target(),
+          (r1b.httpOk() && b1b != null && b1b.code() == 0 && b1b.target()) ? "PASS" : "FAIL");
       System.out.printf("[authcheck] tamperedSign -> http=%d code=%s : %s%n",
           r2.status(), b2 == null ? "-" : b2.code(), p2 ? "PASS" : "FAIL");
       System.out.printf("[authcheck] staleTime    -> http=%d code=%s : %s%n",

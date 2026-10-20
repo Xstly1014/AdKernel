@@ -5,7 +5,10 @@ import com.adkernel.simulator.config.ConfigLoader;
 import com.adkernel.simulator.config.FunnelConfig;
 import com.adkernel.simulator.config.TrafficConfig;
 import com.adkernel.simulator.run.AuthChecker;
+import com.adkernel.simulator.run.BypassCheck;
+import com.adkernel.simulator.run.CacheFault;
 import com.adkernel.simulator.run.LoadRunner;
+import com.adkernel.simulator.run.MergeCheck;
 import com.adkernel.simulator.run.ReconTool;
 
 import java.nio.file.Path;
@@ -18,6 +21,8 @@ import java.nio.file.Path;
  *   run &lt;profile&gt; [--config &lt;dir&gt;]     # 压测运行（smoke / acceptance / fault / daycurve）
  *   authcheck [--config &lt;dir&gt;]           # 鉴权契约探针（k04）
  *   recon --events &lt;file&gt; --bills &lt;dir&gt;  # 对账预演（自记事件 vs 账单）
+ *   mergecheck [--config &lt;dir&gt;]          # 回源合并实证：500 并发同 key 冷查询（M1 k05）
+ *   cachefault [--config &lt;dir&gt;]          # 缓存故障注入实验：源 50ms + L2 hang（M1 k09）
  * </pre>
  */
 public final class SimMain {
@@ -75,6 +80,18 @@ public final class SimMain {
           }
           System.exit(ReconTool.run(events, bills));
         }
+        case "mergecheck" -> {
+          AppConfig app = ConfigLoader.loadApp(Path.of(configDir));
+          System.exit(MergeCheck.run(app));
+        }
+        case "cachefault" -> {
+          AppConfig app = ConfigLoader.loadApp(Path.of(configDir));
+          System.exit(CacheFault.run(app));
+        }
+        case "bypasscheck" -> {
+          AppConfig app = ConfigLoader.loadApp(Path.of(configDir));
+          System.exit(BypassCheck.run(app));
+        }
         default -> {
           System.err.println("unknown command: " + command);
           usage();
@@ -94,6 +111,9 @@ public final class SimMain {
           run <profile> [--config <dir>]      profiles: smoke | acceptance | fault | daycurve
           authcheck [--config <dir>]
           recon --events <file> --bills <dir>
+          mergecheck [--config <dir>]          M1 k05: singleflight
+          cachefault [--config <dir>]          M1 k09: inject experiments
+          bypasscheck [--config <dir>]         M1 k10: bypass vs cached latency A/B
         """);
   }
 }

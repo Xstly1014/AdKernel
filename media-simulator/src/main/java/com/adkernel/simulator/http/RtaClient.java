@@ -44,6 +44,20 @@ public final class RtaClient implements AutoCloseable {
         }
     }
 
+    /** GET（admin/stats 拉取用；超时放宽到 2s——观测通道不占延迟预算口径） */
+    public ApiResult get(String url) {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
+            return new ApiResult(resp.statusCode(), resp.body(), false, false);
+        } catch (Exception e) {
+            return new ApiResult(0, null, false, true);
+        }
+    }
+
     /** 解析决策响应（解析失败返回 null，由裁判记协议错误） */
     public RtaResponse parseDecision(ApiResult r) {
         return r.body() == null ? null : Json.read(r.body(), RtaResponse.class);

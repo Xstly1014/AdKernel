@@ -2,6 +2,8 @@
 #   .\scripts\run-sim.ps1 -Profile smoke          # 5 min @ 3000 qps
 #   .\scripts\run-sim.ps1 -Profile acceptance     # 3 rounds, 10k + 15k spike
 #   .\scripts\run-sim.ps1 -Command authcheck     # signature contract probes (k04)
+#   .\scripts\run-sim.ps1 -Command mergecheck    # singleflight 回源合并实证 (M1 k05)
+#   .\scripts\run-sim.ps1 -Command cachefault    # 缓存故障注入实验 (M1 k09, ~8min)
 #   .\scripts\run-sim.ps1 -Command recon -Events <file> -Bills <dir>
 param(
     [string]$Command = "run",
@@ -20,9 +22,12 @@ Push-Location $RepoRoot
 try {
     $simArgs = @("-Xms256m", "-Xmx${HeapMB}m", "-jar", $jar)
     switch ($Command) {
-        "run"       { $simArgs += @("run", $Profile) }
-        "authcheck" { $simArgs += "authcheck" }
-        "recon"     { $simArgs += @("recon", "--events", $Events, "--bills", $Bills) }
+        "run"        { $simArgs += @("run", $Profile) }
+        "authcheck"  { $simArgs += "authcheck" }
+        "mergecheck" { $simArgs += "mergecheck" }
+        "cachefault" { $simArgs += "cachefault" }
+        "bypasscheck" { $simArgs += "bypasscheck" }
+        "recon"      { $simArgs += @("recon", "--events", $Events, "--bills", $Bills) }
         default     { throw "unknown command: $Command" }
     }
     $simArgs += @("--config", "$RepoRoot\config")

@@ -1,0 +1,38 @@
+server:
+  port: 9200
+  tomcat:
+    # 特征服务 QPS = RTA 决策 QPS × (L1 miss + 伪造穿透比例)，10k 决策下 ~3k
+    max-connections: 20000
+    accept-count: 1000
+    max-keep-alive-requests: -1
+
+spring:
+  application:
+    name: adkernel-feature
+  threads:
+    virtual:
+      # 源层 5ms 延迟注入靠阻塞虚拟线程承载（同步写法 + 高吞吐）
+      enabled: true
+
+logging:
+  level:
+    # k09 二跑根因修复：对齐 RTA 侧——装载/刷新失败堆刷盘会拖死 commonPool 响应处理。
+    com.github.benmanes.caffeine: "OFF"
+
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,shutdown
+
+feature:
+  pool-size: 500000        # 画像规模：前 10 万与 M0 流量池重合，后 40 万为扩展用户
+  source-latency-ms: 5     # 源层延迟注入（回源成本的"可感知的痛"；k09 可调 50）
+  l2-ttl-base-ms: 300000   # L2 基础 TTL 5min
+  l2-ttl-jitter-ms: 60000  # TTL 随机偏移 0~60s（防雪崩：批量写入不集中过期）
+  null-ttl-base-ms: 30000  # 空值缓存基础 TTL 30s
+  null-ttl-jitter-ms: 30000 # 空值 TTL 抖动 0~30s
+  bloom-fpp: 0.0001        # 布隆误判率 0.01%（50万 key 位图 ~1.2MB）

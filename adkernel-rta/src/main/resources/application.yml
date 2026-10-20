@@ -14,6 +14,13 @@ spring:
       # Java 21 虚拟线程承载请求（每请求一个 VT，同步写法 + 高吞吐）
       enabled: true
 
+logging:
+  level:
+    # k09 二跑根因修复：装载失败（RPC 超时是降级链设计内路径）时 Caffeine 对每次失败
+    # 打 WARN + 完整堆栈——故障注入期 8 分钟刷出 240MB 日志，commonPool 响应处理线程
+    # 被 Logback 同步写盘拖死，形成"超时→日志风暴→更多超时"放大回路。静默之。
+    com.github.benmanes.caffeine: "OFF"
+
 management:
   endpoint:
     shutdown:
@@ -31,3 +38,14 @@ rta:
   fault-blacklist-bypass: false
   decision-sample-rate: 0.01
   data-dir: ./data/rta
+  feature-base-url: http://localhost:9200   # 特征服务（M1：L1 miss 回源通道）
+  feature-timeout-ms: 100                   # RPC 硬超时=装载完成窗口：宽于冷装载 6-8ms（让 singleflight
+                                            # 装载完成并回填 L1），窄于故障注入；用户可见等待由 5ms 软预算约束
+  l1-max-size: 300000                       # 命中率驱动的容量修正（k10 实测反推）：流量池 50 万（zipf s=0.86），
+                                            # 真实可命中流量 = 90% 真实（fake 永不入 L1）× 90% 有画像（无画像
+                                            # 长尾按 D4 永不入 L1）× topShare(K)。实测验证：K=10 万 → 预测 68.7%/
+                                            # 实测 67.1%（evictions 35.8 万）；K=20 万 → 上限仅 77.3% 仍不达
+                                            # DoD 80%；K=30 万（topShare 91.9%）→ 上限 82.7%，扣 1-2pp 洗牌
+                                            # 损耗仍有 ~81% 余量。内存 ~200B/条 × 30 万 ≈ 60MB < 堆 30% 界。
+  l1-refresh-sec: 15                        # refreshAfterWrite：异步刷新、刷新期旧值可读
+  l1-expire-min: 10                         # expireAfterWrite：旧值可读性上界（> L2 5min，避免同时失效）
